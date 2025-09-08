@@ -1,0 +1,415 @@
+/* 治愈系设计系统 - PTE记忆助手 */
+
+:root {
+  /* 治愈系色彩方案 */
+  --color-primary-50: #f0f9ff;
+  --color-primary-100: #e0f2fe;
+  --color-primary-200: #bae6fd;
+  --color-primary-300: #7dd3fc;
+  --color-primary-400: #38bdf8;
+  --color-primary-500: #0ea5e9;
+  --color-primary-600: #0284c7;
+  --color-primary-700: #0369a1;
+  --color-primary-800: #075985;
+  --color-primary-900: #0c4a6e;
+
+  /* 柔和辅助色 */
+  --color-pink-50: #fdf2f8;
+  --color-pink-100: #fce7f3;
+  --color-pink-200: #fbcfe8;
+  --color-pink-300: #f9a8d4;
+  --color-pink-400: #f472b6;
+  --color-pink-500: #ec4899;
+  --color-pink-600: #db2777;
+
+  --color-purple-50: #faf5ff;
+  --color-purple-100: #f3e8ff;
+  --color-purple-200: #e9d5ff;
+  --color-purple-300: #d8b4fe;
+  --color-purple-400: #c084fc;
+  --color-purple-500: #a855f7;
+  --color-purple-600: #9333ea;
+
+  --color-green-50: #ecfdf5;
+  --color-green-100: #d1fae5;
+  --color-green-200: #a7f3d0;
+  --color-green-300: #6ee7b7;
+  --color-green-400: #34d399;
+  --color-green-500: #10b981;
+  --color-green-600: #059669;
+
+  --color-orange-50: #fff7ed;
+  --color-orange-100: #ffedd5;
+  --color-orange-200: #fed7aa;
+  --color-orange-300: #fdba74;
+  --color-orange-400: #fb923c;
+  --color-orange-500: #f97316;
+  --color-orange-600: #ea580c;
+
+  /* 柔和中性色 */
+  --color-gray-50: #f8fafc;
+  --color-gray-100: #f1f5f9;
+  --color-gray-200: #e2e8f0;
+  --color-gray-300: #cbd5e1;
+  --color-gray-400: #94a3b8;
+  --color-gray-500: #64748b;
+  --color-gray-600: #475569;
+  --color-gray-700: #334155;
+  --color-gray-800: #1e293b;
+  --color-gray-900: #0f172a;
+
+  /* 治愈系渐变 */
+  --gradient-primary: linear-gradient(135deg, var(--color-primary-400), var(--color-purple-400));
+  --gradient-warm: linear-gradient(135deg, var(--color-pink-300), var(--color-orange-300));
+  --gradient-cool: linear-gradient(135deg, var(--color-primary-300), var(--color-green-300));
+  --gradient-sunset: linear-gradient(135deg, var(--color-orange-300), var(--color-pink-400), var(--color-purple-400));
+  --gradient-ocean: linear-gradient(135deg, var(--color-primary-200), var(--color-primary-400));
+
+  /* 阴影系统 */
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+
+  /* 治愈系玻璃态效果 */
+  --glass-bg: rgba(255, 255, 255, 0.25);
+  --glass-border: rgba(255, 255, 255, 0.18);
+  --glass-backdrop: blur(20px);
+
+  /* 动画曲线 */
+  --ease-out-cubic: cubic-bezier(0.33, 1, 0.68, 1);
+  --ease-in-out-cubic: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  
+  /* 治愈系动画时间 */
+  --duration-150: 150ms;
+  --duration-200: 200ms;
+  --duration-300: 300ms;
+  --duration-500: 500ms;
+  --duration-700: 700ms;
+}
+
+/* 基础治愈系类 */
+.healing-card {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-backdrop);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  box-shadow: var(--shadow-lg);
+  transition: all var(--duration-300) var(--ease-out-cubic);
+}
+
+.healing-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-xl);
+}
+
+.healing-button-primary {
+  background: var(--gradient-primary);
+  color: white;
+  border: none;
+  border-radius: 16px;
+  padding: 12px 24px;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all var(--duration-200) var(--ease-out-cubic);
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+}
+
+.healing-button-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+  filter: brightness(1.1);
+}
+
+.healing-button-primary:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-md);
+}
+
+.healing-button-soft {
+  background: var(--color-gray-50);
+  color: var(--color-gray-700);
+  border: 1px solid var(--color-gray-200);
+  border-radius: 12px;
+  padding: 10px 20px;
+  font-weight: 500;
+  transition: all var(--duration-200) var(--ease-out-cubic);
+  cursor: pointer;
+}
+
+.healing-button-soft:hover {
+  background: white;
+  border-color: var(--color-primary-300);
+  color: var(--color-primary-600);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* 治愈系输入框 */
+.healing-input {
+  background: white;
+  border: 2px solid var(--color-gray-200);
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 16px;
+  transition: all var(--duration-200) var(--ease-out-cubic);
+  outline: none;
+}
+
+.healing-input:focus {
+  border-color: var(--color-primary-400);
+  box-shadow: 0 0 0 3px var(--color-primary-100);
+  transform: scale(1.01);
+}
+
+.healing-input::placeholder {
+  color: var(--color-gray-400);
+}
+
+/* 治愈系背景 */
+.healing-bg-primary {
+  background: var(--gradient-primary);
+}
+
+.healing-bg-warm {
+  background: var(--gradient-warm);
+}
+
+.healing-bg-cool {
+  background: var(--gradient-cool);
+}
+
+.healing-bg-sunset {
+  background: var(--gradient-sunset);
+}
+
+.healing-bg-ocean {
+  background: var(--gradient-ocean);
+}
+
+/* 治愈系文本 */
+.healing-text-gradient {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 700;
+}
+
+/* 治愈系动画 */
+.healing-float {
+  animation: healing-float 3s ease-in-out infinite;
+}
+
+@keyframes healing-float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.healing-pulse {
+  animation: healing-pulse 2s ease-in-out infinite;
+}
+
+@keyframes healing-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
+}
+
+.healing-bounce-in {
+  animation: healing-bounce-in 0.6s var(--ease-bounce);
+}
+
+@keyframes healing-bounce-in {
+  0% { opacity: 0; transform: scale(0.3); }
+  50% { opacity: 1; transform: scale(1.1); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.healing-slide-up {
+  animation: healing-slide-up 0.5s var(--ease-out-cubic);
+}
+
+@keyframes healing-slide-up {
+  0% { opacity: 0; transform: translateY(30px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.healing-fade-in {
+  animation: healing-fade-in 0.8s var(--ease-out-cubic);
+}
+
+@keyframes healing-fade-in {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+/* 治愈系装饰元素 */
+.healing-sparkle {
+  position: relative;
+  overflow: hidden;
+}
+
+.healing-sparkle::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transform: rotate(45deg) translateY(-100%);
+  transition: transform 0.8s var(--ease-out-cubic);
+}
+
+.healing-sparkle:hover::before {
+  transform: rotate(45deg) translateY(100%);
+}
+
+/* 治愈系状态指示器 */
+.healing-progress-ring {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: conic-gradient(var(--color-primary-500) var(--progress, 0%), var(--color-gray-200) 0%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.healing-progress-ring::before {
+  content: '';
+  width: 80%;
+  height: 80%;
+  border-radius: 50%;
+  background: white;
+}
+
+.healing-progress-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  font-weight: 700;
+  color: var(--color-gray-700);
+}
+
+/* 治愈系通知样式 */
+.healing-toast {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-backdrop);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-lg);
+  padding: 16px 20px;
+  color: var(--color-gray-700);
+  font-weight: 500;
+}
+
+.healing-toast.success {
+  border-left: 4px solid var(--color-green-500);
+}
+
+.healing-toast.error {
+  border-left: 4px solid var(--color-pink-500);
+}
+
+.healing-toast.info {
+  border-left: 4px solid var(--color-primary-500);
+}
+
+/* 响应式治愈系布局 */
+.healing-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.healing-grid {
+  display: grid;
+  gap: 24px;
+}
+
+.healing-grid-2 {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.healing-grid-3 {
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+.healing-grid-4 {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+/* 治愈系加载动画 */
+.healing-loader {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: conic-gradient(var(--color-primary-400), var(--color-purple-400), var(--color-pink-400), var(--color-primary-400));
+  animation: healing-spin 1.5s linear infinite;
+  position: relative;
+}
+
+.healing-loader::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  background: white;
+}
+
+@keyframes healing-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 治愈系滚动条 */
+.healing-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-primary-300) var(--color-gray-100);
+}
+
+.healing-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.healing-scrollbar::-webkit-scrollbar-track {
+  background: var(--color-gray-100);
+  border-radius: 4px;
+}
+
+.healing-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--color-primary-300);
+  border-radius: 4px;
+  transition: background var(--duration-200);
+}
+
+.healing-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary-400);
+}
+
+/* 移动端优化 */
+@media (max-width: 768px) {
+  .healing-card {
+    border-radius: 16px;
+    margin: 0 8px;
+  }
+  
+  .healing-container {
+    padding: 0 16px;
+  }
+  
+  .healing-grid {
+    gap: 16px;
+  }
+}

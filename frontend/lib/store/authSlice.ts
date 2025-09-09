@@ -6,8 +6,11 @@ interface User {
   email: string
   level: number
   xp: number
-  streak_count: number
+  streak: number
+  best_streak: number
   created_at: string
+  updated_at: string
+  avatar?: string
 }
 
 interface AuthState {

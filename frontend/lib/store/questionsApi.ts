@@ -1,7 +1,7 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
 import type { RootState } from './index'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081'
 
 // 错题类型定义
 export interface Question {
@@ -59,6 +59,20 @@ export interface QuestionStats {
   last_wrong_date?: string
   created_at: string
   updated_at: string
+}
+
+export interface GeneralQuestionStats {
+  total_questions: number
+  due_questions: number
+  overdue_questions: number
+  mastered_questions: number
+  today_reviewed: number
+  weekly_reviewed: number
+  monthly_reviewed: number
+  average_accuracy: number
+  type_breakdown: Record<string, number>
+  difficulty_breakdown: Record<string, number>
+  tag_stats: Record<string, number>
 }
 
 export interface CreateQuestionRequest {
@@ -189,6 +203,7 @@ export const questionsApi = createApi({
       query: (questionId) => `/api/questions/${questionId}/stats`,
       providesTags: (result, error, questionId) => [{ type: 'QuestionStats', id: questionId }],
     }),
+
 
     // 批量操作错题
     batchUpdateQuestions: builder.mutation<

@@ -60,7 +60,7 @@ export class WebSocketClient {
       const newUserID = state.auth.user?.id
       
       if (newUserID !== this.userID) {
-        this.userID = newUserID
+        this.userID = newUserID || null
         
         if (this.userID && !this.isConnected) {
           this.connect()
@@ -79,7 +79,7 @@ export class WebSocketClient {
         return
       }
 
-      const wsUrl = `${process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8080'}/ws?user_id=${this.userID}`
+      const wsUrl = `${process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8081'}/ws?user_id=${this.userID}`
       
       try {
         this.ws = new WebSocket(wsUrl)
@@ -319,7 +319,7 @@ export class WebSocketClient {
     }
 
     store.dispatch(updateReviewStats({
-      streakDays: current_streak,
+      streak: current_streak,
     }))
   }
 

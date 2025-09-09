@@ -40,26 +40,26 @@ export default function WordMatchPage() {
       setIsLoading(true);
       const response = await axios.get("/games/words");
       const wordsData = response.data.words || [];
-      
+
       // 转换为游戏需要的格式
       const formattedWords = wordsData.map((word: any) => ({
         word: word.english,
         definition: word.chinese,
       }));
-      
+
       setWordPairs(formattedWords);
     } catch (error) {
       console.error("Failed to load word pairs:", error);
       // 如果API失败，使用后备数据
       const fallbackWords = [
-        { word: "Analyze", definition: "分析" },
-        { word: "Evaluate", definition: "评估" },
-        { word: "Comprehensive", definition: "全面的" },
-        { word: "Significant", definition: "重要的" },
-        { word: "Hypothesis", definition: "假设" },
-        { word: "Evidence", definition: "证据" },
-        { word: "Conclude", definition: "得出结论" },
-        { word: "Phenomenon", definition: "现象" },
+        { id: "1", english: "Analyze", chinese: "分析", difficulty: 1, category: "学术" },
+        { id: "2", english: "Evaluate", chinese: "评估", difficulty: 1, category: "学术" },
+        { id: "3", english: "Comprehensive", chinese: "全面的", difficulty: 2, category: "学术" },
+        { id: "4", english: "Significant", chinese: "重要的", difficulty: 1, category: "学术" },
+        { id: "5", english: "Hypothesis", chinese: "假设", difficulty: 2, category: "学术" },
+        { id: "6", english: "Evidence", chinese: "证据", difficulty: 1, category: "学术" },
+        { id: "7", english: "Conclude", chinese: "得出结论", difficulty: 2, category: "学术" },
+        { id: "8", english: "Phenomenon", chinese: "现象", difficulty: 3, category: "学术" },
       ];
       setWordPairs(fallbackWords);
     } finally {
@@ -82,7 +82,7 @@ export default function WordMatchPage() {
 
     // 结束游戏
     await endGame();
-    
+
     // 返回游戏列表
     setTimeout(() => {
       router.push("/games");
@@ -117,7 +117,7 @@ export default function WordMatchPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50">
       <AppNavigation />
-      
+
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* 页面头部 */}
         <div className="flex items-center justify-between mb-8">
@@ -130,7 +130,7 @@ export default function WordMatchPage() {
             >
               <ArrowLeft className="h-6 w-6 text-gray-700" />
             </motion.button>
-            
+
             <div>
               <motion.h1
                 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 bg-clip-text text-transparent"
@@ -181,7 +181,7 @@ export default function WordMatchPage() {
               <p className="text-gray-600 mb-6">
                 将英文单词与对应的中文释义正确配对，挑战你的词汇量！
               </p>
-              
+
               <div className="grid md:grid-cols-3 gap-4 mb-8">
                 <div className="p-4 bg-purple-50 rounded-xl">
                   <div className="text-2xl text-purple-600 mb-2">📝</div>
@@ -200,7 +200,7 @@ export default function WordMatchPage() {
                 </div>
               </div>
             </div>
-            
+
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -217,7 +217,10 @@ export default function WordMatchPage() {
             transition={{ delay: 0.2 }}
           >
             <WordMatchGame
-              words={wordPairs}
+              words={wordPairs.map(pair => ({
+                word: pair.english,
+                definition: pair.chinese
+              }))}
               onGameComplete={handleGameComplete}
               timeLimit={120}
             />

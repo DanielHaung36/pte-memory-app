@@ -1,6 +1,9 @@
 package models
 
 import (
+	"database/sql/driver"
+	"fmt"
+	"strings"
 	"time"
 	"gorm.io/gorm"
 )
@@ -23,6 +26,58 @@ const (
 	VeryHard   DifficultyLevel = 4
 	Expert     DifficultyLevel = 5
 )
+
+// StringArray 自定义类型来处理PostgreSQL数组
+type StringArray []string
+
+// Value 实现driver.Valuer接口，用于将Go的slice转换为数据库值
+func (sa StringArray) Value() (driver.Value, error) {
+	if len(sa) == 0 {
+		return "{}", nil
+	}
+	
+	// 格式化为PostgreSQL数组格式 {"value1","value2"}
+	var items []string
+	for _, item := range sa {
+		// 转义双引号并包装在双引号中
+		escaped := strings.ReplaceAll(item, `"`, `\"`)
+		items = append(items, fmt.Sprintf(`"%s"`, escaped))
+	}
+	return fmt.Sprintf("{%s}", strings.Join(items, ",")), nil
+}
+
+// Scan 实现sql.Scanner接口，用于将数据库值转换为Go类型
+func (sa *StringArray) Scan(value interface{}) error {
+	if value == nil {
+		*sa = StringArray{}
+		return nil
+	}
+	
+	str, ok := value.(string)
+	if !ok {
+		return fmt.Errorf("无法将%T转换为StringArray", value)
+	}
+	
+	// 移除大括号
+	str = strings.Trim(str, "{}")
+	if str == "" {
+		*sa = StringArray{}
+		return nil
+	}
+	
+	// 分割并清理每个项目
+	items := strings.Split(str, ",")
+	result := make(StringArray, len(items))
+	for i, item := range items {
+		// 移除双引号并反转义
+		item = strings.Trim(item, `"`)
+		item = strings.ReplaceAll(item, `\"`, `"`)
+		result[i] = item
+	}
+	
+	*sa = result
+	return nil
+}
 
 type Question struct {
 	ID               string          `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
@@ -96,6 +151,32 @@ type QuestionStats struct {
 	Question           Question  `json:"question,omitempty" gorm:"foreignKey:QuestionID"`
 }
 
+// WrongQuestion 错题记录表，专门用于管理做错的题目
+type WrongQuestion struct {
+	ID                 string    `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	UserID             string    `json:"user_id" gorm:"type:uuid;not null;index"`
+	QuestionID         string    `json:"question_id" gorm:"type:uuid;not null;index"`
+	UserAnswer         string    `json:"user_answer" gorm:"type:text"` // 用户的错误答案
+	CorrectAnswer      string    `json:"correct_answer" gorm:"type:text"` // 正确答案
+	ErrorType          string    `json:"error_type"` // 错误类型：语法、词汇、理解等
+	ErrorReason        string    `json:"error_reason" gorm:"type:text"` // 错误原因分析
+	Difficulty         int       `json:"difficulty" gorm:"default:1"` // 错题难度评级 1-5
+	IsResolved         bool      `json:"is_resolved" gorm:"default:false"` // 是否已掌握
+	ResolvedAt         *time.Time `json:"resolved_at"` // 掌握时间
+	TimesWrong         int       `json:"times_wrong" gorm:"default:1"` // 错误次数
+	LastWrongAt        time.Time `json:"last_wrong_at"` // 最近一次错误时间
+	Notes              string    `json:"notes" gorm:"type:text"` // 用户备注
+	Priority           int       `json:"priority" gorm:"default:1"` // 优先级 1-5
+	Tags               StringArray  `json:"tags" gorm:"type:text[]"` // 错题标签
+	CreatedAt          time.Time `json:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at"`
+	DeletedAt          gorm.DeletedAt `json:"-" gorm:"index"`
+
+	// 关联关系
+	User               User      `json:"user,omitempty" gorm:"foreignKey:UserID"`
+	Question           Question  `json:"question,omitempty" gorm:"foreignKey:QuestionID"`
+}
+
 // GetNextReviewQuestions returns questions that are due for review
 func GetNextReviewQuestions(db *gorm.DB, userID string, limit int) ([]Question, error) {
 	var questions []Question
@@ -133,4 +214,82 @@ func GetOverdueQuestions(db *gorm.DB, userID string) ([]Question, error) {
 		Find(&questions).Error
 		
 	return questions, err
+}
+
+// GetWrongQuestions 获取用户的错题列表
+func GetWrongQuestions(db *gorm.DB, userID string, limit int, offset int) ([]WrongQuestion, error) {
+	var wrongQuestions []WrongQuestion
+	err := db.Preload("Question").Preload("User").
+		Where("user_id = ?", userID).
+		Order("created_at DESC").
+		Limit(limit).Offset(offset).
+		Find(&wrongQuestions).Error
+	return wrongQuestions, err
+}
+
+// GetWrongQuestionsByType 根据错误类型筛选错题
+func GetWrongQuestionsByType(db *gorm.DB, userID string, errorType string) ([]WrongQuestion, error) {
+	var wrongQuestions []WrongQuestion
+	err := db.Preload("Question").
+		Where("user_id = ? AND error_type = ?", userID, errorType).
+		Order("created_at DESC").
+		Find(&wrongQuestions).Error
+	return wrongQuestions, err
+}
+
+// GetUnresolvedWrongQuestions 获取未解决的错题
+func GetUnresolvedWrongQuestions(db *gorm.DB, userID string) ([]WrongQuestion, error) {
+	var wrongQuestions []WrongQuestion
+	err := db.Preload("Question").
+		Where("user_id = ? AND is_resolved = false", userID).
+		Order("priority DESC, created_at DESC").
+		Find(&wrongQuestions).Error
+	return wrongQuestions, err
+}
+
+// GetWrongQuestionStats 获取错题统计信息
+func GetWrongQuestionStats(db *gorm.DB, userID string) (map[string]interface{}, error) {
+	stats := make(map[string]interface{})
+	
+	// 总错题数
+	var totalCount int64
+	db.Model(&WrongQuestion{}).Where("user_id = ?", userID).Count(&totalCount)
+	stats["total_wrong"] = totalCount
+	
+	// 未解决错题数
+	var unresolvedCount int64
+	db.Model(&WrongQuestion{}).Where("user_id = ? AND is_resolved = false", userID).Count(&unresolvedCount)
+	stats["unresolved"] = unresolvedCount
+	
+	// 已解决错题数
+	var resolvedCount int64
+	db.Model(&WrongQuestion{}).Where("user_id = ? AND is_resolved = true", userID).Count(&resolvedCount)
+	stats["resolved"] = resolvedCount
+	
+	// 按错误类型分组
+	var typeStats []struct {
+		ErrorType string `json:"error_type"`
+		Count     int    `json:"count"`
+	}
+	db.Model(&WrongQuestion{}).
+		Select("error_type, COUNT(*) as count").
+		Where("user_id = ?", userID).
+		Group("error_type").
+		Scan(&typeStats)
+	stats["by_type"] = typeStats
+	
+	// 按优先级分组
+	var priorityStats []struct {
+		Priority int `json:"priority"`
+		Count    int `json:"count"`
+	}
+	db.Model(&WrongQuestion{}).
+		Select("priority, COUNT(*) as count").
+		Where("user_id = ?", userID).
+		Group("priority").
+		Order("priority DESC").
+		Scan(&priorityStats)
+	stats["by_priority"] = priorityStats
+	
+	return stats, nil
 }

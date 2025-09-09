@@ -53,29 +53,7 @@ type StudySession struct {
 	ReviewSessions    []ReviewSession `json:"review_sessions,omitempty" gorm:"-"`
 }
 
-type GameSession struct {
-	ID                string    `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
-	UserID            string    `json:"user_id" gorm:"type:uuid;not null;index"`
-	GameType          string    `json:"game_type"` // "word_match", "quick_select", "memory_cards"
-	Score             int       `json:"score" gorm:"default:0"`
-	HighScore         int       `json:"high_score" gorm:"default:0"`
-	Level             int       `json:"level" gorm:"default:1"`
-	QuestionsAnswered int       `json:"questions_answered" gorm:"default:0"`
-	CorrectAnswers    int       `json:"correct_answers" gorm:"default:0"`
-	Accuracy          float64   `json:"accuracy" gorm:"default:0"`
-	Duration          int       `json:"duration"` // seconds
-	XPEarned          int       `json:"xp_earned" gorm:"default:0"`
-	IsCompleted       bool      `json:"is_completed" gorm:"default:false"`
-	StartedAt         time.Time `json:"started_at"`
-	CompletedAt       *time.Time `json:"completed_at"`
-	CreatedAt         time.Time `json:"created_at"`
-	UpdatedAt         time.Time `json:"updated_at"`
-
-	// Game-specific data
-	GameData          map[string]interface{} `json:"game_data" gorm:"type:jsonb"`
-
-	User              User      `json:"user,omitempty" gorm:"foreignKey:UserID"`
-}
+// GameSession moved to models/game.go to avoid duplication
 
 // StreakChallenge represents a streak challenge session
 type StreakChallenge struct {

@@ -95,8 +95,8 @@ export default function SimpleCreateQuestionPage() {
       if (analysis.confidence > 0.6) {
         setFormData(prev => ({
           ...prev,
-          difficulty: analysis.difficulty,
-          tags: [...new Set([...prev.tags, ...analysis.tags.slice(0, 3)])],
+          difficulty: analysis.difficulty as typeof prev.difficulty,
+          tags: Array.from(new Set([...prev.tags, ...analysis.tags.slice(0, 3)])),
           type: analysis.category as any || prev.type
         }));
         
@@ -141,7 +141,7 @@ export default function SimpleCreateQuestionPage() {
       const questionData = {
         title: formData.title,
         content: formData.content,
-        question_type: formData.type,
+        question_type: formData.type as "speaking" | "writing" | "reading" | "listening",
         correct_answer: formData.correctAnswer,
         user_answer: formData.userAnswer,
         explanation: formData.explanation,

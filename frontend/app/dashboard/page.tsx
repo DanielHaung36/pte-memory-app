@@ -127,7 +127,7 @@ export default function DashboardPage() {
   const stats: DashboardStats = {
     totalQuestions: 0,
     dueQuestions: dueQuestionsData?.questions?.length || 0,
-    currentStreak: user?.streak_count || 0,
+    currentStreak: user?.streak || 0,
     todayCompleted: 0,
     todayGoal: 20,
     accuracyRate: 0,
@@ -323,9 +323,9 @@ export default function DashboardPage() {
             </Link>
           </div>
 
-          {stats.dueQuestions.length > 0 ? (
+          {(dueQuestionsData?.questions?.length || 0) > 0 ? (
             <div className="space-y-3">
-              {stats.dueQuestions.map((question) => (
+              {dueQuestionsData?.questions?.map((question) => (
                 <div
                   key={question.id}
                   className="flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors duration-200"
@@ -333,9 +333,9 @@ export default function DashboardPage() {
                   <div className="flex items-center">
                     <div
                       className={`w-3 h-3 rounded-full mr-3 ${
-                        question.priority >= 4
+                        question.difficulty_level >= 4
                           ? "bg-red-500"
-                          : question.priority >= 3
+                          : question.difficulty_level >= 3
                           ? "bg-orange-500"
                           : "bg-blue-500"
                       }`}
@@ -345,7 +345,7 @@ export default function DashboardPage() {
                         {question.title}
                       </h4>
                       <p className="text-sm text-gray-500 capitalize">
-                        {question.questionType.replace("_", " ")}
+                        {question.question_type?.replace("_", " ")}
                       </p>
                     </div>
                   </div>
@@ -372,6 +372,94 @@ export default function DashboardPage() {
               </Link>
             </div>
           )}
+        </div>
+
+        {/* Learning Progress Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Weekly Performance Chart */}
+          <div className="card">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              学习趋势
+            </h3>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={stats.recentPerformance.slice(-7)}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis 
+                    dataKey="date" 
+                    tick={{ fontSize: 12 }}
+                    stroke="#666"
+                    tickFormatter={(value) => new Date(value).getDate().toString()}
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 12 }}
+                    stroke="#666"
+                  />
+                  <Tooltip 
+                    labelFormatter={(value) => `日期: ${new Date(value).toLocaleDateString('zh-CN')}`}
+                    formatter={(value: number, name: string) => [
+                      name === 'score' ? `${value.toFixed(1)}分` : `${value.toFixed(0)}分钟`,
+                      name === 'score' ? '得分' : '用时'
+                    ]}
+                    contentStyle={{
+                      backgroundColor: 'white',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                    }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="score" 
+                    stroke="#3b82f6" 
+                    strokeWidth={2}
+                    dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, fill: '#1d4ed8' }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Category Performance Chart */}
+          <div className="card">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              各科目表现
+            </h3>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={stats.categoryPerformance}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis 
+                    dataKey="category" 
+                    tick={{ fontSize: 12 }}
+                    stroke="#666"
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 12 }}
+                    stroke="#666"
+                  />
+                  <Tooltip 
+                    formatter={(value: number, name: string) => [
+                      name === 'accuracy' ? `${value.toFixed(1)}%` : `${value}题`,
+                      name === 'accuracy' ? '准确率' : '题目数'
+                    ]}
+                    contentStyle={{
+                      backgroundColor: 'white',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                    }}
+                  />
+                  <Bar 
+                    dataKey="accuracy" 
+                    fill="#8b5cf6" 
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
         </div>
 
         {/* Review Heatmap */}

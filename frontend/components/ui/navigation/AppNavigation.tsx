@@ -34,8 +34,9 @@ interface NavigationProps {
 
 const navigationItems = [
   { href: '/dashboard', icon: Home, label: '首页', color: 'text-blue-500' },
-  { href: '/questions', icon: Target, label: '错题本', color: 'text-purple-500' },
-  { href: '/review', icon: BookOpen, label: '复习', color: 'text-green-500' },
+  { href: '/wrong-questions', icon: Target, label: '错题本', color: 'text-purple-500' },
+  { href: '/questions', icon: BookOpen, label: '题库', color: 'text-green-500' },
+  { href: '/review', icon: GraduationCap, label: '复习', color: 'text-blue-500' },
   { href: '/knowledge-graph', icon: Map, label: '知识图谱', color: 'text-orange-500' },
   { href: '/games', icon: Gamepad2, label: '游戏', color: 'text-pink-500' },
   { href: '/analytics', icon: BarChart3, label: '统计', color: 'text-teal-500' },

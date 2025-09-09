@@ -1,0 +1,137 @@
+import axiosInstance from './axios';
+
+// 直接导出axios实例，这样前端页面可以通过 import api from '@/lib/api' 来使用
+const api = axiosInstance;
+
+export default api;
+
+// 如果需要特殊的API方法，可以在这里添加
+export const wrongQuestionsApi = {
+  // 获取错题列表
+  getWrongQuestions: (params?: any) => api.get('/wrong-questions', { params }),
+  
+  // 获取错题详情
+  getWrongQuestion: (id: string) => api.get(`/wrong-questions/${id}`),
+  
+  // 创建错题
+  createWrongQuestion: (data: any) => api.post('/wrong-questions', data),
+  
+  // 更新错题
+  updateWrongQuestion: (id: string, data: any) => api.put(`/wrong-questions/${id}`, data),
+  
+  // 删除错题
+  deleteWrongQuestion: (id: string) => api.delete(`/wrong-questions/${id}`),
+  
+  // 批量操作
+  batchUpdateWrongQuestions: (data: any) => api.post('/wrong-questions/batch', data),
+  
+  // 搜索错题
+  searchWrongQuestions: (params?: any) => api.get('/wrong-questions/search', { params }),
+  
+  // 获取错题统计
+  getWrongQuestionStats: () => api.get('/wrong-questions/stats'),
+};
+
+export const questionsApi = {
+  // 获取题目列表
+  getQuestions: (params?: any) => api.get('/questions', { params }),
+  
+  // 获取题目详情
+  getQuestion: (id: string) => api.get(`/questions/${id}`),
+  
+  // 创建题目
+  createQuestion: (data: any) => api.post('/questions', data),
+  
+  // 更新题目
+  updateQuestion: (id: string, data: any) => api.put(`/questions/${id}`, data),
+  
+  // 删除题目
+  deleteQuestion: (id: string) => api.delete(`/questions/${id}`),
+  
+  // 复习题目
+  reviewQuestion: (data: any) => api.post('/questions/review', data),
+  
+  // 获取待复习题目
+  getDueQuestions: (params?: any) => api.get('/questions/due', { params }),
+  
+  // 获取逾期题目
+  getOverdueQuestions: (params?: any) => api.get('/questions/overdue', { params }),
+  
+  // 按类型获取题目
+  getQuestionsByType: (type: string, params?: any) => api.get(`/questions/type/${type}`, { params }),
+  
+  // 搜索题目
+  searchQuestions: (params?: any) => api.get('/questions/search', { params }),
+  
+  // 获取题目统计
+  getQuestionStatistics: () => api.get('/questions/statistics'),
+  
+  // 获取复习历史
+  getReviewHistory: (params?: any) => api.get('/reviews/history', { params }),
+};
+
+export const authApi = {
+  // 用户注册
+  register: (data: any) => api.post('/auth/register', data),
+  
+  // 用户登录
+  login: (data: any) => api.post('/auth/login', data),
+  
+  // 用户登出
+  logout: () => api.post('/auth/logout'),
+  
+  // 获取当前用户
+  getMe: () => api.get('/auth/me'),
+  
+  // 更新用户资料
+  updateProfile: (data: any) => api.put('/auth/profile', data),
+  
+  // 刷新token
+  refreshToken: () => api.post('/auth/refresh'),
+};
+
+export const gamesApi = {
+  // 获取游戏统计
+  getGameStats: () => api.get('/games/stats'),
+  
+  // 获取最近游戏
+  getRecentGames: (params?: any) => api.get('/games/recent', { params }),
+  
+  // 获取成就
+  getAchievements: () => api.get('/games/achievements'),
+  
+  // 获取单词对
+  getWordPairs: (params?: any) => api.get('/games/words', { params }),
+  
+  // 开始游戏会话
+  startGameSession: (data: any) => api.post('/games/sessions', data),
+  
+  // 完成游戏会话
+  completeGameSession: (id: string, data: any) => api.put(`/games/sessions/${id}`, data),
+};
+
+export const wrongQuestionsApi = {
+  // 获取错题列表
+  getWrongQuestions: (params?: any) => api.get('/wrong-questions', { params }),
+  
+  // 获取单个错题
+  getWrongQuestion: (id: string) => api.get(`/wrong-questions/${id}`),
+  
+  // 创建错题
+  createWrongQuestion: (data: any) => api.post('/wrong-questions', data),
+  
+  // 更新错题
+  updateWrongQuestion: (id: string, data: any) => api.put(`/wrong-questions/${id}`, data),
+  
+  // 删除错题
+  deleteWrongQuestion: (id: string) => api.delete(`/wrong-questions/${id}`),
+  
+  // 获取错题统计
+  getWrongQuestionStats: () => api.get('/wrong-questions/stats'),
+  
+  // 搜索错题
+  searchWrongQuestions: (params: any) => api.get('/wrong-questions/search', { params }),
+  
+  // 批量操作错题
+  batchUpdateWrongQuestions: (data: any) => api.post('/wrong-questions/batch', data),
+};

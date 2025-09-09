@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useReduxAuth } from "@/hooks/useReduxAuth";
-import { useGame } from "@/contexts/GameContext";
+import { useGetGameStatsQuery, useGetRecentGamesQuery, useGetAchievementsQuery } from "@/lib/store/gamesApi";
 import AppNavigation from "@/components/ui/navigation/AppNavigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -85,34 +85,40 @@ const difficultyColors = {
 export default function GamesPage() {
   const router = useRouter();
   const { user, isAuthenticated } = useReduxAuth();
-  const {
-    gameStats,
-    recentGames,
-    achievements,
-    loadGameStats,
-    loadRecentGames,
-    loadAchievements,
-    startGame,
-  } = useGame();
+  
+  // RTK Query hooks
+  const { data: gameStatsData, isLoading: statsLoading } = useGetGameStatsQuery();
+  const { data: recentGamesData, isLoading: gamesLoading } = useGetRecentGamesQuery({ limit: 10 });
+  const { data: achievementsData, isLoading: achievementsLoading } = useGetAchievementsQuery();
+
+  // Extract data with default values
+  const gameStats = gameStatsData?.stats || {
+    total_games: 0,
+    total_score: 0,
+    average_score: 0,
+    best_score: 0,
+    games_today: 0,
+    current_streak: 0,
+    best_streak: 0,
+    accuracy_rate: 0,
+    level: 1,
+    xp: 0,
+    best_accuracy: 0,
+    fastest_time: 0,
+  };
 
   useEffect(() => {
     if (!isAuthenticated) {
       redirect("/auth/login");
       return;
     }
-
-    loadGameStats();
-    loadRecentGames();
-    loadAchievements();
-  }, [isAuthenticated, loadGameStats, loadRecentGames, loadAchievements]);
+  }, [isAuthenticated]);
 
   if (!isAuthenticated || !user) {
     return null;
   }
 
   const handleStartGame = (gameType: string) => {
-    startGame(gameType);
-    
     // Navigate to specific game page
     switch (gameType) {
       case 'word_matching':
@@ -277,7 +283,7 @@ export default function GamesPage() {
                 <CardContent className="p-6">
                   <div className="space-y-4">
                     <div className="flex items-center justify-between text-sm">
-                      <Badge className={difficultyColors[game.difficulty]}>
+                      <Badge className={difficultyColors[game.difficulty as keyof typeof difficultyColors] || 'bg-gray-100 text-gray-700'}>
                         {game.difficulty}
                       </Badge>
                       <span className="text-gray-500 flex items-center">
@@ -291,11 +297,11 @@ export default function GamesPage() {
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-gray-600">个人最佳</span>
                         <span className="font-semibold text-gray-800">
-                          {Math.floor(Math.random() * 1000 + 500)}分
+                          {gameStats.best_score}分
                         </span>
                       </div>
                       <Progress
-                        value={Math.random() * 100}
+                        value={gameStats.best_score > 0 ? Math.min((gameStats.best_score / 2000) * 100, 100) : 0}
                         className="mt-2 h-2"
                       />
                     </div>

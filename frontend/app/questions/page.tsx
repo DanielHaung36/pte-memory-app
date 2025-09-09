@@ -29,8 +29,10 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { useGetQuestionsQuery, useGetQuestionStatsQuery } from "@/lib/store/questionsApi";
+import { useGetQuestionsQuery, useGetQuestionStatisticsQuery } from "@/lib/store/questionsApi";
 import { useWebSocket } from "@/lib/websocket/client";
+import TTSButton from "@/components/ui/TTSButton";
+import QuestionDetailModal from "@/components/ui/QuestionDetailModal";
 
 const QUESTION_TYPES = {
   speaking: { label: "口语", icon: <Mic className="h-4 w-4" />, color: "text-pink-600 bg-pink-100" },
@@ -49,6 +51,9 @@ export default function QuestionsPage() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [difficultyFilter, setDifficultyFilter] = useState<string>("all");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [dropdownOpenId, setDropdownOpenId] = useState<string | null>(null);
+  const [selectedQuestion, setSelectedQuestion] = useState<any>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   
   const { 
     data: questionsData, 
@@ -62,7 +67,7 @@ export default function QuestionsPage() {
   const { 
     data: statsData, 
     isLoading: statsLoading 
-  } = useGetQuestionStatsQuery(undefined);
+  } = useGetQuestionStatisticsQuery();
 
   // 重置页码当筛选条件改变时 - 必须在条件返回之前
   React.useEffect(() => {
@@ -681,9 +686,15 @@ export default function QuestionsPage() {
                       )}
                     </div>
 
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{question.title}</h3>
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="text-lg font-semibold text-gray-900 flex-1">{question.title}</h3>
+                      <TTSButton text={question.title} size="sm" className="ml-2" />
+                    </div>
                     
-                    <p className="text-gray-600 mb-4 line-clamp-2">{question.content}</p>
+                    <div className="flex items-start justify-between mb-4">
+                      <p className="text-gray-600 line-clamp-2 flex-1">{question.content}</p>
+                      <TTSButton text={question.content} size="sm" className="ml-2 flex-shrink-0" />
+                    </div>
 
                     {question.tags && question.tags.length > 0 && (
                       <div className="flex flex-wrap gap-2 mb-4">
@@ -727,9 +738,107 @@ export default function QuestionsPage() {
                       </div>
                     )}
 
-                    <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                      <MoreHorizontal className="h-5 w-5" />
-                    </button>
+                    {/* 三点菜单 */}
+                    <div className="relative">
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => {
+                          setDropdownOpenId(dropdownOpenId === question.id ? null : question.id);
+                        }}
+                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                        title="更多操作"
+                      >
+                        <MoreHorizontal className="h-5 w-5" />
+                      </motion.button>
+                      
+                      {/* 下拉菜单 */}
+                      <AnimatePresence>
+                        {dropdownOpenId === question.id && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                            transition={{ duration: 0.1 }}
+                            className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50"
+                            onMouseLeave={() => setDropdownOpenId(null)}
+                          >
+                            <button
+                              onClick={() => {
+                                setSelectedQuestion(question);
+                                setIsDetailModalOpen(true);
+                                setDropdownOpenId(null);
+                              }}
+                              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                            >
+                              <Eye className="h-4 w-4 mr-3" />
+                              查看详情
+                            </button>
+                            
+                            <button
+                              onClick={() => {
+                                console.log('编辑题目:', question.id);
+                                setDropdownOpenId(null);
+                              }}
+                              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                            >
+                              <PenTool className="h-4 w-4 mr-3" />
+                              编辑题目
+                            </button>
+                            
+                            <button
+                              onClick={() => {
+                                console.log('开始复习:', question.id);
+                                setDropdownOpenId(null);
+                              }}
+                              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                            >
+                              <Target className="h-4 w-4 mr-3" />
+                              开始复习
+                            </button>
+                            
+                            <button
+                              onClick={() => {
+                                if (question.review_schedule?.is_mastered) {
+                                  console.log('标记为未掌握:', question.id);
+                                } else {
+                                  console.log('标记为已掌握:', question.id);
+                                }
+                                setDropdownOpenId(null);
+                              }}
+                              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                            >
+                              {question.review_schedule?.is_mastered ? (
+                                <>
+                                  <XCircle className="h-4 w-4 mr-3" />
+                                  标记为未掌握
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle className="h-4 w-4 mr-3" />
+                                  标记为已掌握
+                                </>
+                              )}
+                            </button>
+                            
+                            <div className="border-t border-gray-100 my-1"></div>
+                            
+                            <button
+                              onClick={() => {
+                                if (confirm('确定要删除这道题目吗？')) {
+                                  console.log('删除题目:', question.id);
+                                }
+                                setDropdownOpenId(null);
+                              }}
+                              className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                            >
+                              <X className="h-4 w-4 mr-3" />
+                              删除题目
+                            </button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -892,6 +1001,16 @@ export default function QuestionsPage() {
           </motion.div>
         )}
       </div>
+
+      {/* Question Detail Modal */}
+      <QuestionDetailModal 
+        question={selectedQuestion}
+        isOpen={isDetailModalOpen}
+        onClose={() => {
+          setIsDetailModalOpen(false);
+          setSelectedQuestion(null);
+        }}
+      />
     </div>
   );
 }

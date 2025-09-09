@@ -15,7 +15,7 @@ import {
   Calendar, Award, BarChart3, TimerIcon, PlayCircle
 } from 'lucide-react'
 import { redirect, useRouter } from 'next/navigation'
-import { useGetDueQuestionsQuery, useGetQuestionStatsQuery } from '@/lib/store/questionsApi'
+import { useGetDueQuestionsQuery, useGetQuestionStatisticsQuery } from '@/lib/store/questionsApi'
 
 export default function ReviewPage() {
   const router = useRouter()
@@ -31,12 +31,12 @@ export default function ReviewPage() {
     isLoading: questionsLoading, 
     error: questionsError,
     refetch: refetchQuestions
-  } = useGetDueQuestionsQuery(undefined)
+  } = useGetDueQuestionsQuery({})
   
   const { 
     data: statsData, 
     isLoading: statsLoading 
-  } = useGetQuestionStatsQuery(undefined)
+  } = useGetQuestionStatisticsQuery()
   
   useEffect(() => {
     if (!isAuthenticated) {
@@ -83,10 +83,10 @@ export default function ReviewPage() {
   // 根据筛选条件过滤题目
   const filteredQuestions = actualDueQuestions.filter(question => {
     if (filterType === 'all') return true
-    if (filterType === 'urgent') return question.priority >= 4
+    if (filterType === 'urgent') return (question as any).priority >= 4 || false
     if (filterType === 'overdue') {
       const now = new Date()
-      const dueDate = new Date(question.nextReviewDate || question.next_review_date)
+      const dueDate = new Date((question as any).nextReviewDate || (question as any).next_review_date || new Date())
       return dueDate < now
     }
     return true
@@ -189,10 +189,10 @@ export default function ReviewPage() {
             <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
               <CardContent className="p-6 text-center">
                 <Clock className="h-8 w-8 mx-auto mb-3 opacity-90" />
-                <div className="text-3xl font-bold mb-2">{actualStats.questions_due || actualStats.due_questions}</div>
+                <div className="text-3xl font-bold mb-2">{actualStats.due_questions}</div>
                 <div className="text-sm opacity-75">待复习题目</div>
                 <div className="text-xs opacity-60 mt-1">
-                  {(actualStats.questions_due || actualStats.due_questions) > 0 ? '是时候复习了！' : '太棒了！'}
+                  {actualStats.due_questions > 0 ? '是时候复习了！' : '太棒了！'}
                 </div>
               </CardContent>
             </Card>
@@ -206,10 +206,10 @@ export default function ReviewPage() {
             <Card className="bg-gradient-to-br from-green-500 to-emerald-600 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
               <CardContent className="p-6 text-center">
                 <BookOpen className="h-8 w-8 mx-auto mb-3 opacity-90" />
-                <div className="text-3xl font-bold mb-2">{actualStats.total_reviews_today}</div>
+                <div className="text-3xl font-bold mb-2">{(actualStats as any).today_reviewed || (actualStats as any).total_reviews_today || 0}</div>
                 <div className="text-sm opacity-75">今日已复习</div>
                 <div className="text-xs opacity-60 mt-1">
-                  正确 {actualStats.correct_reviews_today} 题
+                  正确 {(actualStats as any).correct_reviews_today || 0} 题
                 </div>
               </CardContent>
             </Card>
@@ -223,10 +223,10 @@ export default function ReviewPage() {
             <Card className="bg-gradient-to-br from-orange-500 to-red-500 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
               <CardContent className="p-6 text-center">
                 <Trophy className="h-8 w-8 mx-auto mb-3 opacity-90" />
-                <div className="text-3xl font-bold mb-2">{actualStats.streak}</div>
+                <div className="text-3xl font-bold mb-2">{(actualStats as any).streak || 0}</div>
                 <div className="text-sm opacity-75">当前连击</div>
                 <div className="text-xs opacity-60 mt-1">
-                  {actualStats.accuracy_rate?.toFixed(1) || 0}% 准确率
+                  {((actualStats as any).accuracy_rate || (actualStats as any).average_accuracy || 0).toFixed(1)}% 准确率
                 </div>
               </CardContent>
             </Card>
@@ -394,7 +394,7 @@ export default function ReviewPage() {
                         <Badge className="bg-white/20 text-white">挑战模式</Badge>
                         <span className="flex items-center">
                           <Trophy className="h-3 w-3 mr-1" />
-                          最高连击 {actualStats.streak}
+                          最高连击 {(actualStats as any).streak || 0}
                         </span>
                       </div>
                       
@@ -463,8 +463,8 @@ export default function ReviewPage() {
               <CardContent>
                 <div className="space-y-4">
                   {filteredQuestions.slice(0, 5).map((question, index) => {
-                    const isOverdue = new Date(question.nextReviewDate || question.next_review_date) < new Date()
-                    const priority = question.priority || 1
+                    const isOverdue = new Date((question as any).nextReviewDate || (question as any).next_review_date || new Date()) < new Date()
+                    const priority = (question as any).priority || 1
                     
                     return (
                       <motion.div
@@ -485,10 +485,10 @@ export default function ReviewPage() {
                             <div className="flex-1">
                               <h4 className="font-semibold text-gray-900 mb-1">{question.title}</h4>
                               <div className="flex items-center space-x-4 text-sm text-gray-600">
-                                <span className="capitalize">{question.question_type?.replace('_', ' ') || question.questionType?.replace('_', ' ')}</span>
+                                <span className="capitalize">{question.question_type?.replace('_', ' ')}</span>
                                 <span className="flex items-center">
                                   <Calendar className="h-3 w-3 mr-1" />
-                                  {new Date(question.nextReviewDate || question.next_review_date).toLocaleDateString('zh-CN')}
+                                  {new Date((question as any).nextReviewDate || (question as any).next_review_date || new Date()).toLocaleDateString('zh-CN')}
                                 </span>
                                 {isOverdue && (
                                   <Badge className="bg-red-100 text-red-600 text-xs">

@@ -145,7 +145,7 @@ const KnowledgeGraphVisualization: React.FC<KnowledgeGraphProps> = ({
 
     // Create network
     const data = { nodes: visNodes, edges: visEdges };
-    network.current = new Network(networkContainer.current, data, options);
+    network.current = new Network(networkContainer.current, data as any, options);
 
     // Event handlers
     if (interactive) {

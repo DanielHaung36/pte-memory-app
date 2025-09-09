@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Zap, Fire, Star, Trophy } from 'lucide-react'
+import { Zap, Flame, Star, Trophy } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface StreakCounterProps {
@@ -65,7 +65,7 @@ export default function StreakCounter({
         return {
           name: '连击高手',
           color: 'from-orange-500 to-red-500',
-          icon: Fire,
+          icon: Flame,
           bgColor: 'bg-orange-100',
           textColor: 'text-orange-600',
           multiplier: '2.0x'

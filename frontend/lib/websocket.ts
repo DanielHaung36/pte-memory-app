@@ -26,7 +26,7 @@ export class WebSocketClient {
     }
 
     this.userID = userID
-    const wsUrl = `ws://localhost:8080/ws?user_id=${userID}`
+    const wsUrl = `ws://localhost:8081/ws?user_id=${userID}`
     
     try {
       this.ws = new WebSocket(wsUrl)

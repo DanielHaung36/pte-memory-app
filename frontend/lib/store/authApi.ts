@@ -7,8 +7,10 @@ interface User {
   email: string
   level: number
   xp: number
-  streak_count: number
+  streak: number
+  best_streak: number
   created_at: string
+  updated_at: string
   avatar?: string
 }
 
@@ -32,7 +34,7 @@ interface AuthResponse {
 export const authApi = createApi({
   reducerPath: 'authApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NODE_ENV === 'development' ? 'http://localhost:8080/api/auth' : '/api/auth',
+    baseUrl: process.env.NODE_ENV === 'development' ? 'http://localhost:8081/api/auth' : '/api/auth',
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState).auth.token
       if (token) {

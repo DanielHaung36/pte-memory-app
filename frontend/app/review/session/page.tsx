@@ -74,8 +74,8 @@ export default function ReviewSessionPage() {
       case 'smart':
         return questions.sort((a, b) => {
           // 优先级：到期时间越久的越优先
-          const aOverdue = new Date(a.next_review_date).getTime() - Date.now();
-          const bOverdue = new Date(b.next_review_date).getTime() - Date.now();
+          const aOverdue = new Date((a as any).next_review_date || new Date()).getTime() - Date.now();
+          const bOverdue = new Date((b as any).next_review_date || new Date()).getTime() - Date.now();
           return aOverdue - bOverdue;
         });
       default:
@@ -106,11 +106,10 @@ export default function ReviewSessionPage() {
       const responseTime = Date.now() - questionStartTime;
       
       await reviewQuestion({
-        questionId: currentQuestion.id,
-        isCorrect,
-        confidenceLevel,
-        userAnswer: userAnswer || "未回答",
-        responseTime
+        question_id: currentQuestion.id,
+        is_correct: isCorrect,
+        confidence_level: confidenceLevel,
+        response_time: responseTime
       }).unwrap();
 
       setSessionStats(prev => ({

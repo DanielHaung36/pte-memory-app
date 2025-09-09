@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { setCredentials } from '@/lib/store/authSlice'
+import { useRegisterMutation } from '@/lib/store/authApi'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
@@ -21,11 +22,11 @@ export default function RegisterPage() {
   })
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
   const [registrationStep, setRegistrationStep] = useState<'form' | 'success' | 'redirecting'>('form')
   
   const dispatch = useDispatch()
   const router = useRouter()
+  const [register, { isLoading }] = useRegisterMutation()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -52,23 +53,12 @@ export default function RegisterPage() {
       return
     }
     
-    setIsLoading(true)
-
     try {
-      // 模拟注册API调用
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      const mockUser = {
-        id: Date.now().toString(),
+      const result = await register({
         username: formData.username,
         email: formData.email,
-        level: 1,
-        xp: 0,
-        streak_count: 0,
-        created_at: new Date().toISOString(),
-      }
-      
-      const mockToken = 'mock-jwt-token-' + Date.now()
+        password: formData.password
+      }).unwrap()
       
       // 显示成功页面
       setRegistrationStep('success')
@@ -86,9 +76,13 @@ export default function RegisterPage() {
       
       // 2秒后设置Redux状态并跳转
       setTimeout(() => {
+        // 保存token到localStorage以便axios拦截器使用
+        localStorage.setItem('token', result.token)
+        localStorage.setItem('user', JSON.stringify(result.user))
+        
         dispatch(setCredentials({
-          user: mockUser,
-          token: mockToken,
+          user: result.user,
+          token: result.token,
         }))
         
         setRegistrationStep('redirecting')
@@ -99,16 +93,15 @@ export default function RegisterPage() {
         }, 1000)
       }, 2000)
       
-    } catch (error) {
-      toast.error('注册失败，请重试', {
+    } catch (error: any) {
+      const errorMessage = error?.data?.message || error?.data?.error || '注册失败，请重试'
+      toast.error(errorMessage, {
         style: {
           background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%)',
           color: 'white',
           borderRadius: '16px'
         }
       })
-    } finally {
-      setIsLoading(false)
     }
   }
 

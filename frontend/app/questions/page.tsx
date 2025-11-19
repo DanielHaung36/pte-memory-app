@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useRouter } from "next/navigation";
 import AppNavigation from "@/components/ui/navigation/AppNavigation";
 import {
   Plus,
@@ -27,12 +28,16 @@ import {
   ChevronsRight,
   SlidersHorizontal,
   X,
+  Upload,
+  Music,
 } from "lucide-react";
 import Link from "next/link";
-import { useGetQuestionsQuery, useGetQuestionStatisticsQuery } from "@/lib/store/questionsApi";
+import { useGetQuestionsQuery, useGetQuestionStatisticsQuery, useDeleteQuestionMutation, useReviewQuestionMutation } from "@/lib/store/questionsApi";
 import { useWebSocket } from "@/lib/websocket/client";
 import TTSButton from "@/components/ui/TTSButton";
 import QuestionDetailModal from "@/components/ui/QuestionDetailModal";
+import { useConfirm } from "@/hooks/useConfirm";
+import { toast } from "react-hot-toast";
 
 const QUESTION_TYPES = {
   speaking: { label: "口语", icon: <Mic className="h-4 w-4" />, color: "text-pink-600 bg-pink-100" },
@@ -42,7 +47,9 @@ const QUESTION_TYPES = {
 };
 
 export default function QuestionsPage() {
+  const router = useRouter();
   const { isConnected } = useWebSocket();
+  const { confirm, ConfirmationDialog } = useConfirm();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
@@ -68,6 +75,9 @@ export default function QuestionsPage() {
     data: statsData, 
     isLoading: statsLoading 
   } = useGetQuestionStatisticsQuery();
+
+  const [deleteQuestion, { isLoading: isDeleting }] = useDeleteQuestionMutation();
+  const [reviewQuestion, { isLoading: isReviewing }] = useReviewQuestionMutation();
 
   // 重置页码当筛选条件改变时 - 必须在条件返回之前
   React.useEffect(() => {
@@ -172,6 +182,57 @@ export default function QuestionsPage() {
     return "text-red-600 bg-red-100";
   };
 
+  const handleDeleteQuestion = async (questionId: string) => {
+    try {
+      await deleteQuestion(questionId).unwrap();
+      // 删除成功后关闭下拉菜单
+      setDropdownOpenId(null);
+    } catch (error) {
+      console.error('删除失败:', error);
+      alert('删除失败，请重试');
+    }
+  };
+
+  const handleMarkAsMastered = async (questionId: string, currentlyMastered: boolean) => {
+    console.log('标记掌握状态:', questionId, '当前状态:', currentlyMastered);
+    try {
+      const result = await reviewQuestion({
+        question_id: questionId,
+        is_correct: !currentlyMastered, // 如果当前已掌握，则标记为未掌握（错误），反之标记为掌握（正确）
+        confidence_level: currentlyMastered ? 1 : 5, // 已掌握->未掌握用低信心，未掌握->已掌握用高信心
+        response_time: 1000
+      }).unwrap();
+      console.log('API调用成功:', result);
+      
+      const action = currentlyMastered ? "取消掌握" : "标记为已掌握";
+      toast.success(`${action}成功`, {
+        icon: currentlyMastered ? "↺" : "✅",
+        style: {
+          background: currentlyMastered 
+            ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
+            : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+          color: 'white',
+          borderRadius: '12px',
+        }
+      });
+      
+      // 关闭下拉菜单
+      setDropdownOpenId(null);
+    } catch (error) {
+      console.error("API调用失败:", error);
+      const action = currentlyMastered ? "取消掌握" : "标记为已掌握";
+      toast.error(`${action}失败，请重试`, {
+        icon: "❌",
+        style: {
+          background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+          color: 'white',
+          borderRadius: '12px',
+        }
+      });
+      console.error("Failed to update mastery status:", error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 relative overflow-hidden">
       {/* 浮动装饰元素 */}
@@ -245,6 +306,28 @@ export default function QuestionsPage() {
                   {isConnected ? '实时同步' : '离线模式'}
                 </span>
               </div>
+
+              <Link href="/questions/batch-upload-audio">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all"
+                >
+                  <Music className="h-5 w-5 mr-2" />
+                  批量上传音频
+                </motion.button>
+              </Link>
+
+              <Link href="/questions/import">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all"
+                >
+                  <Upload className="h-5 w-5 mr-2" />
+                  批量导入
+                </motion.button>
+              </Link>
 
               <Link href="/questions/simple">
                 <motion.button
@@ -763,32 +846,46 @@ export default function QuestionsPage() {
                             className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50"
                             onMouseLeave={() => setDropdownOpenId(null)}
                           >
-                            <button
-                              onClick={() => {
-                                setSelectedQuestion(question);
-                                setIsDetailModalOpen(true);
-                                setDropdownOpenId(null);
-                              }}
-                              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                            >
-                              <Eye className="h-4 w-4 mr-3" />
-                              查看详情
-                            </button>
+                            <Link href={`/questions/${question.id}`}>
+                              <button
+                                onClick={() => setDropdownOpenId(null)}
+                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                              >
+                                <Eye className="h-4 w-4 mr-3" />
+                                查看详情
+                              </button>
+                            </Link>
                             
-                            <button
-                              onClick={() => {
-                                console.log('编辑题目:', question.id);
-                                setDropdownOpenId(null);
-                              }}
-                              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                            >
-                              <PenTool className="h-4 w-4 mr-3" />
-                              编辑题目
-                            </button>
+                            <Link href={`/questions/edit/${question.id}`}>
+                              <button
+                                onClick={() => setDropdownOpenId(null)}
+                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                              >
+                                <PenTool className="h-4 w-4 mr-3" />
+                                编辑题目
+                              </button>
+                            </Link>
                             
                             <button
                               onClick={() => {
                                 console.log('开始复习:', question.id);
+                                const url = `/review/session?question=${question.id}`;
+                                console.log('准备跳转到:', url);
+                                try {
+                                  router.push(url);
+                                  console.log('router.push 调用完成');
+                                  // 备用方案：如果router.push没有工作，使用window.location
+                                  setTimeout(() => {
+                                    if (window.location.pathname === '/questions') {
+                                      console.log('router.push似乎没有工作，使用window.location');
+                                      window.location.href = url;
+                                    }
+                                  }, 100);
+                                } catch (error) {
+                                  console.error('router.push 错误:', error);
+                                  // 如果router.push失败，使用window.location作为后备
+                                  window.location.href = url;
+                                }
                                 setDropdownOpenId(null);
                               }}
                               className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
@@ -799,14 +896,11 @@ export default function QuestionsPage() {
                             
                             <button
                               onClick={() => {
-                                if (question.review_schedule?.is_mastered) {
-                                  console.log('标记为未掌握:', question.id);
-                                } else {
-                                  console.log('标记为已掌握:', question.id);
-                                }
-                                setDropdownOpenId(null);
+                                console.log('按钮被点击了，isReviewing:', isReviewing);
+                                handleMarkAsMastered(question.id, question.review_schedule?.is_mastered || false);
                               }}
-                              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                              disabled={isReviewing}
+                              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50"
                             >
                               {question.review_schedule?.is_mastered ? (
                                 <>
@@ -824,16 +918,25 @@ export default function QuestionsPage() {
                             <div className="border-t border-gray-100 my-1"></div>
                             
                             <button
-                              onClick={() => {
-                                if (confirm('确定要删除这道题目吗？')) {
-                                  console.log('删除题目:', question.id);
+                              onClick={async () => {
+                                const confirmed = await confirm({
+                                  title: "删除题目",
+                                  message: "确定要删除这道题目吗？删除后无法恢复！",
+                                  type: "danger",
+                                  confirmText: "确认删除",
+                                  cancelText: "取消"
+                                });
+                                if (confirmed) {
+                                  handleDeleteQuestion(question.id);
+                                } else {
+                                  setDropdownOpenId(null);
                                 }
-                                setDropdownOpenId(null);
                               }}
-                              className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                              disabled={isDeleting}
+                              className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               <X className="h-4 w-4 mr-3" />
-                              删除题目
+                              {isDeleting ? '删除中...' : '删除题目'}
                             </button>
                           </motion.div>
                         )}
@@ -1011,6 +1114,7 @@ export default function QuestionsPage() {
           setSelectedQuestion(null);
         }}
       />
+      <ConfirmationDialog />
     </div>
   );
 }

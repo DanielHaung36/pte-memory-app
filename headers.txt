@@ -1,0 +1,6 @@
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Set-Cookie: auth_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMDAwMDAwMDAtMDAwMC0wMDAwLTAwMDAtMDAwMDAwMDAwMDAxIiwidXNlcm5hbWUiOiJ0ZXN0dXNlciIsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsImlzcyI6InB0ZS1tZW1vcnktYXBwIiwiZXhwIjoxNzU4MDkzNzM5LCJuYmYiOjE3NTc0ODg5MzksImlhdCI6MTc1NzQ4ODkzOX0.xRGPotlbd1s3W_ssMZGSnKQQkqWqNFaOmEOnaE8Xz-Y; Path=/; Max-Age=604800; HttpOnly; SameSite=Lax
+Date: Wed, 10 Sep 2025 07:22:19 GMT
+Content-Length: 288
+

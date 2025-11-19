@@ -76,13 +76,9 @@ export default function RegisterPage() {
       
       // 2秒后设置Redux状态并跳转
       setTimeout(() => {
-        // 保存token到localStorage以便axios拦截器使用
-        localStorage.setItem('token', result.token)
-        localStorage.setItem('user', JSON.stringify(result.user))
-        
+        // No longer storing token in localStorage - using HTTP-only cookies
         dispatch(setCredentials({
           user: result.user,
-          token: result.token,
         }))
         
         setRegistrationStep('redirecting')
@@ -305,6 +301,7 @@ export default function RegisterPage() {
                   required
                   value={formData.username}
                   onChange={handleChange}
+                  autoComplete="username"
                   className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all bg-gray-50/50 backdrop-blur-sm placeholder-gray-400"
                   placeholder="输入您的用户名"
                 />
@@ -330,6 +327,7 @@ export default function RegisterPage() {
                   required
                   value={formData.email}
                   onChange={handleChange}
+                  autoComplete="email"
                   className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all bg-gray-50/50 backdrop-blur-sm placeholder-gray-400"
                   placeholder="输入您的邮箱"
                 />
@@ -355,6 +353,7 @@ export default function RegisterPage() {
                   required
                   value={formData.password}
                   onChange={handleChange}
+                  autoComplete="new-password"
                   className="w-full pl-10 pr-12 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all bg-gray-50/50 backdrop-blur-sm placeholder-gray-400"
                   placeholder="设置您的密码"
                 />
@@ -387,6 +386,7 @@ export default function RegisterPage() {
                   required
                   value={formData.confirmPassword}
                   onChange={handleChange}
+                  autoComplete="new-password"
                   className="w-full pl-10 pr-12 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all bg-gray-50/50 backdrop-blur-sm placeholder-gray-400"
                   placeholder="再次输入密码"
                 />
@@ -463,12 +463,12 @@ export default function RegisterPage() {
                 className="font-semibold text-purple-600 hover:text-purple-700 transition-colors inline-flex items-center gap-1"
               >
                 立即登录
-                <motion.div
+                <motion.span
                   animate={{ x: [0, 3, 0] }}
                   transition={{ duration: 1.5, repeat: Infinity }}
                 >
                   💫
-                </motion.div>
+                </motion.span>
               </Link>
             </p>
           </motion.div>

@@ -30,13 +30,9 @@ export default function LoginPage() {
         password: formData.password
       }).unwrap()
       
-      // 保存token到localStorage以便axios拦截器使用
-      localStorage.setItem('token', result.token)
-      localStorage.setItem('user', JSON.stringify(result.user))
-      
+      // No longer storing token in localStorage - using HTTP-only cookies
       dispatch(setCredentials({
         user: result.user,
-        token: result.token,
       }))
       
       toast.success('🎉 登录成功！欢迎回来！', {
@@ -170,6 +166,7 @@ export default function LoginPage() {
                   required
                   value={formData.email}
                   onChange={handleChange}
+                  autoComplete="email"
                   className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all bg-gray-50/50 backdrop-blur-sm placeholder-gray-400"
                   placeholder="输入您的邮箱"
                 />
@@ -195,6 +192,7 @@ export default function LoginPage() {
                   required
                   value={formData.password}
                   onChange={handleChange}
+                  autoComplete="current-password"
                   className="w-full pl-10 pr-12 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all bg-gray-50/50 backdrop-blur-sm placeholder-gray-400"
                   placeholder="输入您的密码"
                 />

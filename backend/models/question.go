@@ -17,6 +17,68 @@ const (
 	Listening QuestionType = "listening"
 )
 
+// PTE题型常量
+const (
+	// Speaking (口语)
+	PTEReadAloud           = "pte_read_aloud"            // 朗读
+	PTERepeatSentence      = "pte_repeat_sentence"       // 复述句子
+	PTEDescribeImage       = "pte_describe_image"        // 描述图像
+	PTERetellLecture       = "pte_retell_lecture"        // 复述讲座
+	PTEAnswerShortQuestion = "pte_answer_short_question" // 简答题
+
+	// Writing (写作)
+	PTESummarizeWrittenText = "pte_summarize_written_text" // 概括文本
+	PTEWriteEssay           = "pte_write_essay"            // 写作文
+
+	// Reading (阅读)
+	PTEMultipleChoice       = "pte_multiple_choice"        // 单选
+	PTEMultipleChoiceMulti  = "pte_multiple_choice_multi"  // 多选
+	PTEReorderParagraphs    = "pte_reorder_paragraphs"     // 段落排序
+	PTEReadingFillBlanks    = "pte_reading_fill_blanks"    // 阅读填空
+	PTEReadingWritingFill   = "pte_reading_writing_fill"   // 阅读写作填空
+
+	// Listening (听力)
+	PTESummarizeSpokenText  = "pte_summarize_spoken_text"  // 概括口语
+	PTEListeningMultiChoice = "pte_listening_multi_choice" // 听力选择
+	PTEFillBlanksListening  = "pte_fill_blanks_listening"  // 听力填空
+	PTEHighlightCorrectSum  = "pte_highlight_summary"      // 高亮总结
+	PTESelectMissingWord    = "pte_select_missing_word"    // 选择遗漏单词
+	PTEHighlightIncorrect   = "pte_highlight_incorrect"    // 高亮错误词
+	PTEWriteFromDictation   = "pte_write_from_dictation"   // 听写
+)
+
+// 雅思题型常量
+const (
+	// Speaking
+	IELTSSpeakingPart1 = "ielts_speaking_part1" // Part1 日常对话
+	IELTSSpeakingPart2 = "ielts_speaking_part2" // Part2 话题陈述
+	IELTSSpeakingPart3 = "ielts_speaking_part3" // Part3 深度讨论
+
+	// Writing
+	IELTSTask1Academic     = "ielts_writing_task1_academic" // 图表作文
+	IELTSTask1General      = "ielts_writing_task1_general"  // 书信作文
+	IELTSTask2             = "ielts_writing_task2"          // 议论文
+
+	// Reading
+	IELTSTrueFalseNotGiven  = "ielts_true_false_not_given"
+	IELTSYesNoNotGiven      = "ielts_yes_no_not_given"
+	IELTSMatchingHeadings   = "ielts_matching_headings"
+	IELTSMatchingInfo       = "ielts_matching_information"
+	IELTSMatchingFeatures   = "ielts_matching_features"
+	IELTSSentenceCompletion = "ielts_sentence_completion"
+	IELTSSummaryCompletion  = "ielts_summary_completion"
+	IELTSDiagramLabel       = "ielts_diagram_label"
+	IELTSShortAnswer        = "ielts_short_answer"
+
+	// Listening
+	IELTSFormCompletion      = "ielts_form_completion"
+	IELTSNoteCompletion      = "ielts_note_completion"
+	IELTSTableCompletion     = "ielts_table_completion"
+	IELTSFlowChart           = "ielts_flow_chart"
+	IELTSListeningMultiChoice = "ielts_listening_multi_choice"
+	IELTSMapPlanLabel        = "ielts_map_plan_label"
+)
+
 type DifficultyLevel int
 
 const (
@@ -85,7 +147,7 @@ type Question struct {
 	Title            string          `json:"title" gorm:"not null"`
 	Content          string          `json:"content" gorm:"type:text;not null"`
 	QuestionType     QuestionType    `json:"question_type" gorm:"type:varchar(20);not null;index"`
-	SubType          string          `json:"sub_type"` // e.g., "repeat_sentence", "essay", "fill_blanks"
+	SubType          string          `json:"sub_type" gorm:"index"` // 使用上面定义的PTE/IELTS常量
 	CorrectAnswer    string          `json:"correct_answer" gorm:"type:text"`
 	UserAnswer       string          `json:"user_answer" gorm:"type:text"`
 	Explanation      string          `json:"explanation" gorm:"type:text"`
@@ -95,12 +157,26 @@ type Question struct {
 	ImageURL         string          `json:"image_url"`
 	TimeLimit        int             `json:"time_limit"` // in seconds
 	Points           int             `json:"points" gorm:"default:10"`
-	
+
+	// 考试类型相关字段
+	ExamType         string          `json:"exam_type" gorm:"index"` // "PTE", "IELTS", "TOEFL", "General"
+	ExamModule       string          `json:"exam_module"` // "Academic", "General Training"
+	ScoringCriteria  string          `json:"scoring_criteria" gorm:"type:text"` // JSON格式的评分标准
+	SampleAnswer     string          `json:"sample_answer" gorm:"type:text"` // 参考答案/范文
+	KeyVocabulary    StringArray     `json:"key_vocabulary" gorm:"type:text[]"` // 关键词汇
+	CommonMistakes   string          `json:"common_mistakes" gorm:"type:text"` // 常见错误说明
+
 	// Metadata
 	Source           string          `json:"source"` // e.g., "PTE Official", "IELTS Cambridge"
 	SourceID         string          `json:"source_id"`
 	IsPublic         bool            `json:"is_public" gorm:"default:false"`
-	
+	IsFreeQuestion   bool            `json:"is_free_question" gorm:"default:false"` // 免费题库标记
+	ContributorID    string          `json:"contributor_id" gorm:"type:uuid"` // 贡献者ID
+	VerifiedBy       string          `json:"verified_by" gorm:"type:uuid"` // 审核者ID
+	VerificationStatus string        `json:"verification_status" gorm:"default:pending"` // pending/approved/rejected
+	DownloadCount    int             `json:"download_count" gorm:"default:0"` // 下载次数
+	LikeCount        int             `json:"like_count" gorm:"default:0"` // 点赞数
+
 	// Timestamps
 	CreatedAt        time.Time       `json:"created_at"`
 	UpdatedAt        time.Time       `json:"updated_at"`

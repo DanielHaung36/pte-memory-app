@@ -52,14 +52,14 @@ export default function WordMatchPage() {
       console.error("Failed to load word pairs:", error);
       // 如果API失败，使用后备数据
       const fallbackWords = [
-        { id: "1", english: "Analyze", chinese: "分析", difficulty: 1, category: "学术" },
-        { id: "2", english: "Evaluate", chinese: "评估", difficulty: 1, category: "学术" },
-        { id: "3", english: "Comprehensive", chinese: "全面的", difficulty: 2, category: "学术" },
-        { id: "4", english: "Significant", chinese: "重要的", difficulty: 1, category: "学术" },
-        { id: "5", english: "Hypothesis", chinese: "假设", difficulty: 2, category: "学术" },
-        { id: "6", english: "Evidence", chinese: "证据", difficulty: 1, category: "学术" },
-        { id: "7", english: "Conclude", chinese: "得出结论", difficulty: 2, category: "学术" },
-        { id: "8", english: "Phenomenon", chinese: "现象", difficulty: 3, category: "学术" },
+        { word: "Analyze", definition: "分析" },
+        { word: "Evaluate", definition: "评估" },
+        { word: "Comprehensive", definition: "全面的" },
+        { word: "Significant", definition: "重要的" },
+        { word: "Hypothesis", definition: "假设" },
+        { word: "Evidence", definition: "证据" },
+        { word: "Conclude", definition: "得出结论" },
+        { word: "Phenomenon", definition: "现象" },
       ];
       setWordPairs(fallbackWords);
     } finally {

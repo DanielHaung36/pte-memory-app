@@ -6,6 +6,14 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// UserRole represents user role
+type UserRole string
+
+const (
+	RoleUser  UserRole = "user"
+	RoleAdmin UserRole = "admin"
+)
+
 type User struct {
 	ID        string    `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 	Username  string    `json:"username" gorm:"uniqueIndex;not null"`
@@ -16,6 +24,13 @@ type User struct {
 	XP        int       `json:"xp" gorm:"default:0"`
 	Streak    int       `json:"streak" gorm:"default:0"`
 	BestStreak int      `json:"best_streak" gorm:"default:0"`
+	Role      string    `json:"role" gorm:"type:varchar(20);default:'user';index"`
+
+	// Ban related fields
+	IsBanned   bool       `json:"is_banned" gorm:"default:false;index"`
+	BanReason  string     `json:"ban_reason,omitempty"`
+	BanUntil   *time.Time `json:"ban_until,omitempty"`
+
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
@@ -24,6 +39,11 @@ type User struct {
 	Questions     []Question     `json:"questions,omitempty"`
 	ReviewSessions []ReviewSession `json:"review_sessions,omitempty"`
 	UserStats     *UserStats     `json:"user_stats,omitempty"`
+}
+
+// IsAdmin checks if the user has admin role
+func (u *User) IsAdmin() bool {
+	return u.Role == string(RoleAdmin)
 }
 
 type UserStats struct {

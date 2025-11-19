@@ -1,5 +1,6 @@
 // WebSocket client for real-time communication
 import { toast } from 'react-hot-toast'
+import { API_CONFIG } from './config'
 
 export interface WebSocketMessage {
   type: string
@@ -26,7 +27,7 @@ export class WebSocketClient {
     }
 
     this.userID = userID
-    const wsUrl = `ws://localhost:8081/ws?user_id=${userID}`
+    const wsUrl = `${API_CONFIG.WEBSOCKET_URL}?user_id=${userID}`
     
     try {
       this.ws = new WebSocket(wsUrl)

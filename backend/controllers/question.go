@@ -2,16 +2,18 @@ package controllers
 
 import (
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
-	
-	"github.com/gin-gonic/gin"
+
 	"pte-memory-backend/database"
 	"pte-memory-backend/middleware"
 	"pte-memory-backend/models"
 	"pte-memory-backend/services"
 	"pte-memory-backend/websocket"
+
+	"github.com/gin-gonic/gin"
 )
 
 type QuestionController struct {
@@ -191,6 +193,7 @@ func (qc *QuestionController) GetReviewHistory(c *gin.Context) {
 		TimeSpent      int     `json:"time_spent"`
 		StreakDay      bool    `json:"streak_day"`
 		CompletedGoal  bool    `json:"completed_goal"`
+		correctCount   int     // 内部字段，用于计算准确率
 	}
 
 	var reviews []ReviewHistoryItem
@@ -215,46 +218,65 @@ func (qc *QuestionController) GetReviewHistory(c *gin.Context) {
 		return
 	}
 
-	// 如果没有真实数据，生成模拟数据用于展示
+	// 如果没有聚合数据，从review_sessions表查询原始数据
 	if len(reviews) == 0 {
-		// 生成过去30天的模拟数据
-		mockDays := 30
-		if days < 30 {
-			mockDays = days
+		now := time.Now()
+		endDate := now
+		startDate := endDate.AddDate(0, 0, -days)
+
+		// 查询指定时间范围内的复习会话
+		var sessions []models.ReviewSession
+		err = database.DB.Where("user_id = ? AND created_at >= ? AND created_at <= ?",
+			userID, startDate, endDate).
+			Order("created_at DESC").
+			Find(&sessions).Error
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve review sessions"})
+			return
 		}
-		
-		for i := 0; i < mockDays; i++ {
-			date := time.Now().AddDate(0, 0, -i)
-			// 模拟一些变化：周末少一些，工作日多一些
-			baseCount := 8
-			if date.Weekday() == 0 || date.Weekday() == 6 { // 周末
-				baseCount = 3
-			}
-			
-			// 添加随机性
-			reviewCount := baseCount + (i%5) - 2 // 在基础上+-2的变化
-			if reviewCount < 0 {
-				reviewCount = 0
-			}
-			
-			accuracy := 70.0 + float64(i%20) + float64((i*7)%10) // 70-90%的准确率变化
-			if accuracy > 95 {
-				accuracy = 95
-			}
-			
-			timeSpent := reviewCount * (300 + (i%200)) // 每题5-8分钟左右
-			
-			if reviewCount > 0 { // 只有有复习记录的日期才加入
-				reviews = append(reviews, ReviewHistoryItem{
-					Date:          date.Format("2006-01-02"),
-					ReviewCount:   reviewCount,
-					AccuracyRate:  accuracy,
-					TimeSpent:     timeSpent,
-					StreakDay:     reviewCount >= 5,
-					CompletedGoal: reviewCount >= 10,
-				})
+
+		// 按日期聚合数据
+		dailyData := make(map[string]*ReviewHistoryItem)
+
+		for _, session := range sessions {
+			dateKey := session.CreatedAt.Format("2006-01-02")
+
+			if item, exists := dailyData[dateKey]; exists {
+				item.ReviewCount++
+				item.TimeSpent += session.ResponseTime / 1000 // 转换为秒
+				if session.IsCorrect {
+					item.correctCount++
+				}
+			} else {
+				correctCount := 0
+				if session.IsCorrect {
+					correctCount = 1
+				}
+
+				dailyData[dateKey] = &ReviewHistoryItem{
+					Date:         dateKey,
+					ReviewCount:  1,
+					TimeSpent:    session.ResponseTime / 1000,
+					correctCount: correctCount,
+				}
 			}
 		}
+
+		// 计算准确率并转换为切片
+		for _, item := range dailyData {
+			if item.ReviewCount > 0 {
+				item.AccuracyRate = float64(item.correctCount) / float64(item.ReviewCount) * 100
+			}
+			item.StreakDay = item.ReviewCount >= 5
+			item.CompletedGoal = item.ReviewCount >= 10
+			reviews = append(reviews, *item)
+		}
+
+		// 按日期排序
+		sort.Slice(reviews, func(i, j int) bool {
+			return reviews[i].Date > reviews[j].Date
+		})
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -368,15 +390,11 @@ func (qc *QuestionController) DeleteQuestion(c *gin.Context) {
 
 // GetDueQuestions retrieves questions that are due for review
 func (qc *QuestionController) GetDueQuestions(c *gin.Context) {
-	// 临时使用固定用户ID进行测试
-	userID := "test-user-id"
-	/*
 	userID, exists := middleware.GetUserIDFromContext(c)
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
 		return
 	}
-	*/
 
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
 
@@ -463,12 +481,19 @@ func (qc *QuestionController) ReviewQuestion(c *gin.Context) {
 		return
 	}
 
+	// 获取用户数据以获取当前连击数
+	var user models.User
+	if err := database.DB.First(&user, "id = ?", userID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
 	// 更新复习计划
 	reviewResult := services.ReviewResult{
 		IsCorrect:       req.IsCorrect,
 		ConfidenceLevel: req.ConfidenceLevel,
 		ResponseTime:    req.ResponseTime,
-		StreakCount:     0, // TODO: 从用户数据获取
+		StreakCount:     user.Streak, // 从用户数据获取当前连击数
 	}
 	
 	newSchedule, err := qc.ebbinghausService.CalculateNextReview(question.ReviewSchedule, reviewResult)
@@ -565,6 +590,32 @@ func (qc *QuestionController) ReviewQuestion(c *gin.Context) {
 	if err := tx.Save(&stats).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update question stats"})
+		return
+	}
+
+	// 更新用户连击数据
+	if req.IsCorrect {
+		// 答对了，增加连击数
+		user.Streak++
+		if user.Streak > user.BestStreak {
+			user.BestStreak = user.Streak
+		}
+	} else {
+		// 答错了，检查是否有连击保护道具
+		boostService := services.NewBoostService(database.DB)
+		if boostService.CheckStreakProtection(userID) {
+			// 有保护，连击数不清零
+			// 但不增加
+		} else {
+			// 没有保护，连击数清零
+			user.Streak = 0
+		}
+	}
+
+	// 保存用户数据
+	if err := tx.Save(&user).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user streak"})
 		return
 	}
 

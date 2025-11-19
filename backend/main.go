@@ -1,38 +1,78 @@
 package main
 
 import (
-	"log"
 	"net/http"
 	"strings"
-	
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
+	"pte-memory-backend/cache"
 	"pte-memory-backend/config"
 	"pte-memory-backend/database"
+	"pte-memory-backend/logger"
+	"pte-memory-backend/middleware"
 	"pte-memory-backend/routes"
+	"pte-memory-backend/scheduler"
+	"pte-memory-backend/storage"
 	"pte-memory-backend/websocket"
 )
 
 func main() {
 	// Initialize configuration
 	config.Init()
-	
+
+	// Initialize logger
+	if err := logger.Init(config.AppConfig.GinMode); err != nil {
+		panic("Failed to initialize logger: " + err.Error())
+	}
+	defer logger.Sync()
+
+	logger.Info("Starting PTE Memory App API", zap.String("mode", config.AppConfig.GinMode))
+
+	// Initialize Redis cache (optional - will work without it)
+	cacheConfig := cache.Config{
+		Host:     config.AppConfig.RedisHost,
+		Port:     config.AppConfig.RedisPort,
+		Password: config.AppConfig.RedisPassword,
+		DB:       config.AppConfig.RedisDB,
+	}
+	if err := cache.Init(cacheConfig); err != nil {
+		logger.Warn("Running without Redis cache", zap.Error(err))
+	}
+
 	// Initialize database
 	database.Init()
-	
+
+	// Initialize storage (local by default)
+	storage.Init("local", map[string]string{
+		"base_path": "./uploads",
+		"base_url":  "http://localhost:" + config.AppConfig.Port + "/uploads",
+	})
+
+	// Initialize scheduler
+	if err := scheduler.Init(); err != nil {
+		logger.Fatal("Failed to initialize scheduler", zap.Error(err))
+	}
+	if err := scheduler.RegisterJobs(); err != nil {
+		logger.Fatal("Failed to register scheduled jobs", zap.Error(err))
+	}
+	scheduler.Start()
+	defer scheduler.Stop()
+
 	// Initialize WebSocket hub
 	wsHub := websocket.NewHub()
 	go wsHub.Run()
-	
+
 	// Set Gin mode
 	gin.SetMode(config.AppConfig.GinMode)
-	
+
 	// Create Gin router
 	router := gin.New()
-	
-	// Add middleware
-	router.Use(gin.Logger())
-	router.Use(gin.Recovery())
+
+	// Add middleware - use custom zap logger
+	router.Use(middleware.ZapLogger())
+	router.Use(middleware.ZapRecovery())
 	
 	// CORS middleware - support multiple origins
 	corsConfig := cors.DefaultConfig()
@@ -59,16 +99,21 @@ func main() {
 	
 	// Setup WebSocket routes
 	router.GET("/ws", websocket.HandleWebSocket(wsHub))
-	
+
+	// Serve uploaded files
+	router.Static("/uploads", "./uploads")
+
 	// Setup API routes with WebSocket hub
 	routes.SetupRoutes(router, wsHub)
 	
 	// Start server
 	port := ":" + config.AppConfig.Port
-	log.Printf("Server starting on port %s", port)
-	log.Printf("CORS origin: %s", config.AppConfig.CORSOrigin)
-	
+	logger.Info("Server starting",
+		zap.String("port", port),
+		zap.String("cors_origin", config.AppConfig.CORSOrigin),
+	)
+
 	if err := router.Run(port); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+		logger.Fatal("Failed to start server", zap.Error(err))
 	}
 }

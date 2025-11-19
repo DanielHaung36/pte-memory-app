@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
 import type { RootState } from './index'
+import { API_CONFIG } from '../config'
 
 interface GameStats {
   total_games: number
@@ -10,6 +11,10 @@ interface GameStats {
   current_streak: number
   best_streak: number
   accuracy_rate: number
+  level: number
+  xp: number
+  best_accuracy: number
+  fastest_time: number
 }
 
 interface GameSession {
@@ -69,12 +74,10 @@ interface CompleteGameSessionRequest {
 export const gamesApi = createApi({
   reducerPath: 'gamesApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NODE_ENV === 'development' ? 'http://localhost:8081/api/games' : '/api/games',
-    prepareHeaders: (headers, { getState }) => {
-      const token = (getState() as RootState).auth.token
-      if (token) {
-        headers.set('authorization', `Bearer ${token}`)
-      }
+    baseUrl: `${API_CONFIG.API_BASE_URL}/games`,
+    credentials: 'include', // Include cookies in requests
+    prepareHeaders: (headers) => {
+      // Remove token management - now handled by HTTP-only cookies
       return headers
     },
   }),

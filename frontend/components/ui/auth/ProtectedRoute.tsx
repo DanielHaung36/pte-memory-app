@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { useRouter, usePathname } from 'next/navigation';
-import { RootState } from '@/lib/store';
-import { initializeAuth } from '@/lib/store/authSlice';
+import { useGetMeQuery } from '@/lib/store/authApi';
+import { setCredentials, logout } from '@/lib/store/authSlice';
 import { motion } from 'framer-motion';
 import { Brain, Heart, Sparkles } from 'lucide-react';
 
@@ -20,39 +20,71 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const dispatch = useDispatch();
   const router = useRouter();
   const pathname = usePathname();
-  const { isAuthenticated, isLoading } = useSelector((state: RootState) => state.auth);
-  const [isInitialized, setIsInitialized] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
+  
+  const { data, error, isLoading, isError } = useGetMeQuery(undefined, {
+    retry: false, // Don't retry on error to avoid infinite requests
+  });
+
+  const isAuthenticated = !!data?.user;
+  const user = data?.user;
 
   useEffect(() => {
-    // 初始化认证状态
-    dispatch(initializeAuth());
-    setIsInitialized(true);
-  }, [dispatch]);
+    if (isLoading) return; // Wait for API call to complete
+
+    // Mark as initialized once we get a response (success or error)
+    if (!hasInitialized) {
+      setHasInitialized(true);
+    }
+
+    if (isError || error) {
+      // User is not authenticated
+      dispatch(logout());
+    } else if (user) {
+      // User is authenticated
+      dispatch(setCredentials({ user }));
+    }
+  }, [data, error, isError, isLoading, user, dispatch, hasInitialized]);
 
   useEffect(() => {
-    // 只有在初始化完成后才进行路由检查
-    if (!isInitialized) return;
+    // Don't redirect until we've initialized and have a clear auth state
+    if (isLoading || !hasInitialized) return;
 
     const publicRoutes = ['/auth/login', '/auth/register', '/'];
     const isPublicRoute = publicRoutes.includes(pathname);
 
-    if (requireAuth && !isAuthenticated && !isPublicRoute) {
-      // 延迟跳转，给用户一些时间看到加载状态
-      const timer = setTimeout(() => {
+    // Only redirect after we have clear authentication state
+    if (hasInitialized) {
+      if (requireAuth && !isAuthenticated && !isPublicRoute) {
+        // 未认证用户访问受保护路由时，跳转到登录页
+        console.log('Redirecting to login - not authenticated');
         router.push('/auth/login');
-      }, 1000);
-      
-      return () => clearTimeout(timer);
-    }
+        return;
+      }
 
-    if (isAuthenticated && isPublicRoute && pathname !== '/') {
-      // 已登录用户访问登录页面时，重定向到dashboard
-      router.push('/dashboard');
+      // 只有在非登录/注册页面且用户已登录时才重定向
+      if (isAuthenticated && pathname === '/auth/login') {
+        // 已登录用户访问登录页面时，延迟重定向到dashboard以避免循环
+        console.log('Redirecting to dashboard - already authenticated');
+        setTimeout(() => {
+          router.replace('/dashboard');
+        }, 100);
+        return;
+      }
+
+      if (isAuthenticated && pathname === '/auth/register') {
+        // 已登录用户访问注册页面时，重定向到dashboard
+        console.log('Redirecting to dashboard - already authenticated');
+        setTimeout(() => {
+          router.replace('/dashboard');
+        }, 100);
+        return;
+      }
     }
-  }, [isAuthenticated, pathname, router, requireAuth, isInitialized]);
+  }, [isAuthenticated, pathname, router, requireAuth, isLoading, hasInitialized]);
 
   // 显示加载状态
-  if (!isInitialized || (requireAuth && !isAuthenticated && pathname !== '/auth/login' && pathname !== '/auth/register')) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center">
         <div className="text-center">

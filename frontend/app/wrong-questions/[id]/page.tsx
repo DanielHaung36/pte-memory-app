@@ -16,6 +16,7 @@ import {
   useUpdateWrongQuestionMutation,
   useDeleteWrongQuestionMutation,
 } from '@/lib/store/wrongQuestionsApi';
+import { useConfirm } from '@/hooks/useConfirm';
 
 interface WrongQuestion {
   id: string;
@@ -92,6 +93,7 @@ export default function WrongQuestionDetailPage() {
   });
   const [updateWrongQuestion] = useUpdateWrongQuestionMutation();
   const [deleteWrongQuestion] = useDeleteWrongQuestionMutation();
+  const { confirm, ConfirmationDialog } = useConfirm();
 
   const wrongQuestion = wrongQuestionData?.wrong_question;
 
@@ -147,7 +149,15 @@ export default function WrongQuestionDetailPage() {
   };
 
   const handleDelete = async () => {
-    if (confirm('确定要删除这个错题记录吗？')) {
+    const confirmed = await confirm({
+      title: "删除错题记录",
+      message: "确定要删除这个错题记录吗？删除后无法恢复！",
+      type: "danger",
+      confirmText: "确认删除",
+      cancelText: "取消"
+    });
+    
+    if (confirmed) {
       try {
         await deleteWrongQuestion(wrongQuestionId).unwrap();
         toast.success('错题已删除');
@@ -521,6 +531,7 @@ export default function WrongQuestionDetailPage() {
           </div>
         </div>
       </div>
+      <ConfirmationDialog />
     </div>
   );
 }

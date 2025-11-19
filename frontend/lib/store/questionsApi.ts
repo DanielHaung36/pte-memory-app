@@ -1,7 +1,8 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
 import type { RootState } from './index'
+import { API_CONFIG } from '../config'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081'
+const API_BASE_URL = API_CONFIG.BACKEND_URL
 
 // 错题类型定义
 export interface Question {
@@ -107,11 +108,9 @@ export const questionsApi = createApi({
   reducerPath: 'questionsApi',
   baseQuery: fetchBaseQuery({
     baseUrl: API_BASE_URL,
-    prepareHeaders: (headers, { getState }) => {
-      const token = (getState() as RootState).auth.token || localStorage.getItem('token')
-      if (token) {
-        headers.set('authorization', `Bearer ${token}`)
-      }
+    credentials: 'include', // Include cookies in requests
+    prepareHeaders: (headers) => {
+      // Remove token management - now handled by HTTP-only cookies
       return headers
     },
   }),
@@ -165,10 +164,13 @@ export const questionsApi = createApi({
     }),
 
     // 获取待复习错题
-    getDueQuestions: builder.query<{ questions: Question[]; count: number }, { limit?: number }>({
-      query: ({ limit = 20 }) => ({
+    getDueQuestions: builder.query<{ questions: Question[]; count: number }, { limit?: number; specific_question_id?: string }>({
+      query: ({ limit = 20, specific_question_id }) => ({
         url: '/api/questions/due',
-        params: { limit },
+        params: { 
+          limit,
+          ...(specific_question_id && { question_id: specific_question_id })
+        },
       }),
       providesTags: ['Question', 'ReviewSchedule'],
     }),

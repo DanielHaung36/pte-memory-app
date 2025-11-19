@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: pte-memory-postgres
+    environment:
+      POSTGRES_DB: pte_memory_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: superadminpass
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./setup-database.sql:/docker-entrypoint-initdb.d/setup-database.sql
+    networks:
+      - pte-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: pte-memory-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - pte-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  pte-network:
+    driver: bridge

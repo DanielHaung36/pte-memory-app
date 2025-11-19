@@ -2,6 +2,7 @@ import { store } from '../store'
 import { updateQuestionFromSocket, updateStatsFromSocket } from '../store/questionsSlice'
 import { updateReviewStats } from '../store/reviewSlice'
 import { updateUser } from '../store/authSlice'
+import { API_CONFIG } from '../config'
 
 // WebSocket事件类型
 export const WS_EVENTS = {
@@ -60,7 +61,7 @@ export class WebSocketClient {
       const newUserID = state.auth.user?.id
       
       if (newUserID !== this.userID) {
-        this.userID = newUserID
+        this.userID = newUserID || null
         
         if (this.userID && !this.isConnected) {
           this.connect()
@@ -79,7 +80,7 @@ export class WebSocketClient {
         return
       }
 
-      const wsUrl = `${process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8080'}/ws?user_id=${this.userID}`
+      const wsUrl = `${API_CONFIG.WEBSOCKET_URL}?user_id=${this.userID}`
       
       try {
         this.ws = new WebSocket(wsUrl)
@@ -319,7 +320,7 @@ export class WebSocketClient {
     }
 
     store.dispatch(updateReviewStats({
-      streakDays: current_streak,
+      streak: current_streak,
     }))
   }
 

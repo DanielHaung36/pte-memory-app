@@ -11,6 +11,12 @@ interface WordPair {
   matched: boolean
 }
 
+interface GameCard extends WordPair {
+  pairId: string
+  type: 'word' | 'definition'
+  content: string
+}
+
 interface WordMatchGameProps {
   words: { word: string; definition: string }[]
   onGameComplete?: (score: number, timeSpent: number) => void
@@ -28,7 +34,7 @@ export default function WordMatchGame({
   const [score, setScore] = useState(0)
   const [timeLeft, setTimeLeft] = useState(timeLimit)
   const [gameState, setGameState] = useState<'ready' | 'playing' | 'completed'>('ready')
-  const [shuffledCards, setShuffledCards] = useState<(WordPair & { type: 'word' | 'definition' })[]>([])
+  const [shuffledCards, setShuffledCards] = useState<GameCard[]>([])
 
   useEffect(() => {
     // Only initialize game when words change AND it's a new game (not currently playing)
@@ -62,10 +68,22 @@ export default function WordMatchGame({
 
     setGameWords(wordPairs)
 
-    // Create cards for both words and definitions
+    // Create cards for both words and definitions with unique IDs but same pairId
     const cards = wordPairs.flatMap(pair => [
-      { ...pair, type: 'word' as const, content: pair.word },
-      { ...pair, type: 'definition' as const, content: pair.definition }
+      { 
+        ...pair, 
+        id: `${pair.id}-word`,
+        pairId: pair.id,
+        type: 'word' as const, 
+        content: pair.word 
+      },
+      { 
+        ...pair, 
+        id: `${pair.id}-definition`,
+        pairId: pair.id,
+        type: 'definition' as const, 
+        content: pair.definition 
+      }
     ])
 
     // Shuffle cards
@@ -110,11 +128,11 @@ export default function WordMatchGame({
       const secondCard = shuffledCards.find(card => card.id === secondCardId)
 
       if (firstCard && secondCard) {
-        // Check if it's a valid match (same pair ID but different types)
-        if (firstCard.id === secondCard.id && firstCard.type !== secondCard.type) {
+        // Check if it's a valid match (same pairId but different types)
+        if (firstCard.pairId === secondCard.pairId && firstCard.type !== secondCard.type) {
           // Match found!
           setTimeout(() => {
-            setMatchedPairs(prev => [...prev, firstCard.id])
+            setMatchedPairs(prev => [...prev, firstCard.pairId])
             setSelectedCards([])
             setScore(prev => prev + 100)
           }, 500)
@@ -128,14 +146,14 @@ export default function WordMatchGame({
     }
   }
 
-  const getCardStyle = (cardId: string) => {
-    if (matchedPairs.includes(cardId)) {
-      return 'bg-green-100 border-green-300 text-green-800'
+  const getCardStyle = (cardId: string, pairId: string) => {
+    if (matchedPairs.includes(pairId)) {
+      return 'bg-gradient-to-br from-green-100 to-emerald-100 border-green-400 text-green-800 ring-2 ring-green-300'
     }
     if (selectedCards.includes(cardId)) {
-      return 'bg-blue-100 border-blue-300 text-blue-800'
+      return 'bg-gradient-to-br from-blue-100 to-indigo-100 border-blue-400 text-blue-800 ring-2 ring-blue-300 transform scale-105'
     }
-    return 'bg-white border-gray-200 text-gray-800 hover:bg-gray-50'
+    return 'bg-gradient-to-br from-white to-gray-50 border-gray-300 text-gray-800 hover:border-gray-400 hover:from-gray-50 hover:to-gray-100'
   }
 
   const formatTime = (seconds: number) => {
@@ -221,20 +239,24 @@ export default function WordMatchGame({
   return (
     <div className="space-y-6">
       {/* Game Header */}
-      <div className="card">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-6">
-            <div className="flex items-center space-x-2">
-              <Clock className="w-5 h-5 text-gray-500" />
-              <span className={`font-mono text-lg ${timeLeft <= 30 ? 'text-red-600 animate-pulse' : 'text-gray-700'}`}>
+      <div className="bg-gradient-to-r from-white via-blue-50 to-purple-50 rounded-2xl shadow-lg border border-gray-200 p-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-4 lg:gap-6">
+            <div className="flex items-center space-x-2 bg-white rounded-lg px-3 py-2 shadow-sm">
+              <Clock className={`w-5 h-5 ${timeLeft <= 30 ? 'text-red-500' : 'text-blue-500'}`} />
+              <span className={`font-mono text-lg font-bold ${timeLeft <= 30 ? 'text-red-600 animate-pulse' : 'text-gray-700'}`}>
                 {formatTime(timeLeft)}
               </span>
             </div>
-            <div>
+            <div className="flex items-center space-x-2 bg-white rounded-lg px-3 py-2 shadow-sm">
+              <Trophy className="w-5 h-5 text-yellow-500" />
               <span className="text-sm text-gray-600">得分: </span>
               <span className="text-lg font-bold text-primary-600">{score}</span>
             </div>
-            <div>
+            <div className="flex items-center space-x-2 bg-white rounded-lg px-3 py-2 shadow-sm">
+              <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs font-bold">{matchedPairs.length}</span>
+              </div>
               <span className="text-sm text-gray-600">进度: </span>
               <span className="text-lg font-bold text-green-600">
                 {matchedPairs.length}/{gameWords.length}
@@ -242,50 +264,80 @@ export default function WordMatchGame({
             </div>
           </div>
           <div className="flex space-x-2">
-            <button
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={shuffleCards}
-              className="btn-secondary flex items-center"
+              className="flex items-center px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded-lg shadow-sm transition-colors"
             >
               <Shuffle className="w-4 h-4 mr-2" />
               洗牌
-            </button>
-            <button
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={resetGame}
-              className="btn-secondary flex items-center"
+              className="flex items-center px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded-lg shadow-sm transition-colors"
             >
               <RotateCcw className="w-4 h-4 mr-2" />
               重置
-            </button>
+            </motion.button>
           </div>
         </div>
       </div>
 
       {/* Game Board */}
-      <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4">
         <AnimatePresence>
           {shuffledCards.map((card, index) => (
             <motion.div
               key={`${card.id}-${card.type}`}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              transition={{ delay: index * 0.05 }}
-              whileHover={{ scale: 1.05 }}
+              initial={{ opacity: 0, scale: 0.8, rotateY: 90 }}
+              animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+              exit={{ opacity: 0, scale: 0.8, rotateY: -90 }}
+              transition={{ 
+                delay: index * 0.03,
+                type: "spring",
+                stiffness: 200,
+                damping: 20
+              }}
+              whileHover={{ 
+                scale: matchedPairs.includes(card.pairId) ? 1 : 1.05,
+                y: matchedPairs.includes(card.pairId) ? 0 : -2
+              }}
               whileTap={{ scale: 0.95 }}
+              className="perspective-1000"
             >
               <button
                 onClick={() => handleCardClick(card.id, card.type)}
-                disabled={matchedPairs.includes(card.id) || selectedCards.length >= 2}
-                className={`w-full h-24 p-3 rounded-lg border-2 transition-all duration-200 ${getCardStyle(card.id)} ${
-                  matchedPairs.includes(card.id) || selectedCards.length >= 2 ? 'cursor-not-allowed' : 'cursor-pointer'
-                }`}
+                disabled={matchedPairs.includes(card.pairId) || (selectedCards.length >= 2 && !selectedCards.includes(card.id))}
+                className={`w-full h-28 md:h-32 p-3 rounded-xl border-2 transition-all duration-300 transform-gpu ${getCardStyle(card.id, card.pairId)} ${
+                  matchedPairs.includes(card.pairId) || (selectedCards.length >= 2 && !selectedCards.includes(card.id)) 
+                    ? 'cursor-not-allowed opacity-75' 
+                    : 'cursor-pointer shadow-md hover:shadow-lg'
+                } ${matchedPairs.includes(card.pairId) ? 'animate-pulse' : ''}`}
               >
-                <div className="text-sm font-medium text-center">
-                  {card.type === 'word' ? card.word : card.definition}
+                <div className="flex flex-col h-full justify-center items-center">
+                  <div className="text-sm md:text-base font-semibold text-center leading-tight mb-1">
+                    {card.type === 'word' ? card.word : card.definition}
+                  </div>
+                  <div className={`text-xs px-2 py-1 rounded-full font-medium ${
+                    card.type === 'word' 
+                      ? 'bg-blue-100 text-blue-700' 
+                      : 'bg-purple-100 text-purple-700'
+                  }`}>
+                    {card.type === 'word' ? '🇬🇧 ENG' : '🇨🇳 中文'}
+                  </div>
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  {card.type === 'word' ? '英文' : '中文'}
-                </div>
+                {matchedPairs.includes(card.pairId) && (
+                  <motion.div
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                  >
+                    <div className="text-2xl">✅</div>
+                  </motion.div>
+                )}
               </button>
             </motion.div>
           ))}
@@ -293,18 +345,32 @@ export default function WordMatchGame({
       </div>
 
       {/* Progress Bar */}
-      <div className="card">
-        <div className="flex justify-between text-sm text-gray-600 mb-2">
-          <span>游戏进度</span>
-          <span>{((matchedPairs.length / gameWords.length) * 100).toFixed(0)}%</span>
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+        <div className="flex justify-between items-center text-sm text-gray-600 mb-3">
+          <span className="font-medium flex items-center">
+            🎯 游戏进度
+          </span>
+          <span className="font-bold text-lg text-primary-600">
+            {((matchedPairs.length / gameWords.length) * 100).toFixed(0)}%
+          </span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-3">
+        <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${(matchedPairs.length / gameWords.length) * 100}%` }}
-            transition={{ duration: 0.5 }}
-            className="bg-gradient-to-r from-primary-500 to-primary-600 h-3 rounded-full"
-          ></motion.div>
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 h-4 rounded-full relative"
+          >
+            <motion.div
+              animate={{ x: ['-100%', '100%'] }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+            />
+          </motion.div>
+        </div>
+        <div className="flex justify-between text-xs text-gray-500 mt-2">
+          <span>已完成: {matchedPairs.length} 对</span>
+          <span>剩余: {gameWords.length - matchedPairs.length} 对</span>
         </div>
       </div>
     </div>

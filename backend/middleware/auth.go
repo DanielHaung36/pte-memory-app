@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -42,28 +41,38 @@ func GenerateToken(user *models.User) (string, error) {
 // AuthMiddleware validates JWT token and sets user context
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
-			c.Abort()
-			return
-		}
+		// Try to get token from cookie first
+		tokenString, err := c.Cookie("auth_token")
+		
+		// If cookie doesn't exist, try Authorization header as fallback
+		if err != nil {
+			authHeader := c.GetHeader("Authorization")
+			if authHeader == "" {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
+				c.Abort()
+				return
+			}
 
-		// Extract token from "Bearer <token>"
-		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-		if tokenString == authHeader {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization format"})
+			// Extract token from "Bearer <token>"
+			tokenString = strings.TrimPrefix(authHeader, "Bearer ")
+			if tokenString == authHeader {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization format"})
+				c.Abort()
+				return
+			}
+		}
+		
+		if tokenString == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
 			c.Abort()
 			return
 		}
-		fmt.Println(tokenString)
 		// Parse and validate token
 		claims := &Claims{}
 		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 			return []byte(config.AppConfig.JWTSecret), nil
 		})
 
-		fmt.Printf("gin.Logger(): %v\n", token)
 		if err != nil || !token.Valid {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 			c.Abort()
@@ -117,8 +126,20 @@ func RefreshToken(c *gin.Context) {
 		return
 	}
 
+	// Set new token in HTTP-only cookie
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie(
+		"auth_token",           // name
+		newToken,               // value
+		int((7*24*time.Hour).Seconds()), // maxAge (7 days)
+		"/",                    // path
+		"",                     // domain
+		false,                  // secure (set to true in production with HTTPS)
+		true,                   // httpOnly
+	)
+
 	c.JSON(http.StatusOK, gin.H{
-		"token": newToken,
-		"user":  user,
+		"message": "Token refreshed successfully",
+		"user":    user,
 	})
 }

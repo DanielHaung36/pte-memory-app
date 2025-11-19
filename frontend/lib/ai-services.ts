@@ -109,7 +109,7 @@ export class AIServices {
     if (words.length > 50) difficulty += 1;
     
     // Average word length
-    const avgWordLength = words.reduce((sum, word) => sum + word.length, 0) / words.length;
+    const avgWordLength = words.reduce((sum: number, word: string) => sum + word.length, 0) / words.length;
     if (avgWordLength > 6) difficulty += 1;
     
     // Sentence complexity
@@ -303,8 +303,8 @@ export class AIServices {
   // Knowledge gap analysis
   static analyzeKnowledgeGaps(userProgress: any[], knowledgeNodes: KnowledgeNode[]): any {
     const nodeMap = new Map(knowledgeNodes.map(node => [node.id, node]));
-    const gaps = [];
-    const strengths = [];
+    const gaps: any[] = [];
+    const strengths: any[] = [];
     
     userProgress.forEach(progress => {
       const node = nodeMap.get(progress.node_id);
@@ -338,7 +338,7 @@ export class AIServices {
     if (gaps.length === 0) return ['Great job! Keep up the consistent practice.'];
     
     const recommendations = [];
-    const categories = [...new Set(gaps.map(g => g.node.category))];
+    const categories = Array.from(new Set(gaps.map(g => g.node.category)));
     
     if (categories.length === 1) {
       recommendations.push(`Focus intensively on ${categories[0]} skills this week`);
@@ -361,8 +361,8 @@ export class AIServices {
     edges: any[];
     insights: string[];
   } {
-    const nodes = [];
-    const edges = [];
+    const nodes: any[] = [];
+    const edges: any[] = [];
     const insights = [];
     const skillMap = new Map();
     const conceptMap = new Map();
@@ -452,9 +452,9 @@ export class AIServices {
       ]
     };
 
-    const typeSkills = skillPatterns[question.question_type] || [];
-    typeSkills.forEach(skill => {
-      if (skill.keywords.some(keyword => content.includes(keyword))) {
+    const typeSkills = skillPatterns[question.question_type as keyof typeof skillPatterns] || [];
+    typeSkills.forEach((skill: any) => {
+      if (skill.keywords.some((keyword: string) => content.includes(keyword))) {
         skills.push(skill);
       }
     });
@@ -517,7 +517,7 @@ export class AIServices {
   // 生成知识图谱边 - 增强版智能算法
   private static generateKnowledgeEdges(nodes: any[], edges: any[]) {
     // 创建技能依赖映射
-    const skillDependencies = {
+    const skillDependencies: { [key: string]: string[] } = {
       'Foundation Skills': [],
       'Time Management': ['Foundation Skills'],
       'Note Taking': ['Foundation Skills', 'Time Management'],
@@ -553,11 +553,11 @@ export class AIServices {
         let strength = 0;
 
         // 1. 检查技能依赖关系
-        const dependencies = skillDependencies[node1.name] || [];
+        const dependencies = skillDependencies[node1.name as keyof typeof skillDependencies] || [];
         if (dependencies.includes(node2.name)) {
           connectionType = 'requires';
           strength = 0.9;
-        } else if ((skillDependencies[node2.name] || []).includes(node1.name)) {
+        } else if ((skillDependencies[node2.name as keyof typeof skillDependencies] || []).includes(node1.name)) {
           connectionType = 'enables';
           strength = 0.85;
         }
@@ -669,7 +669,7 @@ export class AIServices {
       'same_skill_type': '#be185d', // 粉色 - 同类技能
       'related': '#94a3b8'        // 灰色 - 一般关系
     };
-    return colors[type] || '#94a3b8';
+    return colors[type as keyof typeof colors] || '#94a3b8';
   }
 
   // 获取边的标签
@@ -685,7 +685,7 @@ export class AIServices {
       'same_skill_type': '同类技能',
       'related': '相关'
     };
-    return labels[type] || '相关';
+    return labels[type as keyof typeof labels] || '相关';
   }
 
   // 生成AI知识洞察
@@ -705,7 +705,7 @@ export class AIServices {
     }
 
     // 学习路径建议
-    const categories = [...new Set(nodes.map(n => n.category))];
+    const categories = Array.from(new Set(nodes.map(n => n.category)));
     if (categories.length > 1) {
       const weakestCategory = categories
         .map(cat => ({

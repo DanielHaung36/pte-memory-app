@@ -169,7 +169,7 @@ export default function QuickSelectGame() {
         questionTimerRef.current = null;
       }
     };
-  }, [gameState, questionTimeLeft, selectedAnswer, handleAnswer]);
+  }, [gameState, questionTimeLeft, selectedAnswer]);
 
   const initializeGame = () => {
     const shuffledQuestions = [...sampleQuestions].sort(() => Math.random() - 0.5);

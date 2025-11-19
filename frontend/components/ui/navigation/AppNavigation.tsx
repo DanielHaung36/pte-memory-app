@@ -23,7 +23,13 @@ import {
   Zap,
   Target,
   Map,
-  Gamepad2
+  Gamepad2,
+  ShoppingBag,
+  MessageCircle,
+  Users,
+  Bell,
+  ClipboardCheck,
+  Library
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -34,11 +40,84 @@ interface NavigationProps {
 
 const navigationItems = [
   { href: '/dashboard', icon: Home, label: '首页', color: 'text-blue-500' },
-  { href: '/questions', icon: Target, label: '错题本', color: 'text-purple-500' },
-  { href: '/review', icon: BookOpen, label: '复习', color: 'text-green-500' },
-  { href: '/knowledge-graph', icon: Map, label: '知识图谱', color: 'text-orange-500' },
-  { href: '/games', icon: Gamepad2, label: '游戏', color: 'text-pink-500' },
+  {
+    href: '/questions',
+    icon: BookOpen,
+    label: '题库',
+    color: 'text-green-500',
+    submenu: [
+      { href: '/questions', label: '题库浏览' },
+      { href: '/questions/create', label: '添加题目' },
+      { href: '/questions/edit', label: '编辑题目' },
+    ]
+  },
+  {
+    href: '/review',
+    icon: GraduationCap,
+    label: '复习',
+    color: 'text-blue-500',
+    submenu: [
+      { href: '/review/session', label: '开始复习' },
+      { href: '/review/daily-plan', label: '每日计划' },
+    ]
+  },
+  {
+    href: '/wrong-questions',
+    icon: Target,
+    label: '错题本',
+    color: 'text-red-500',
+    submenu: [
+      { href: '/wrong-questions', label: '错题列表' },
+      { href: '/wrong-questions/create', label: '添加错题' },
+    ]
+  },
+  {
+    href: '/exams',
+    icon: ClipboardCheck,
+    label: '考试',
+    color: 'text-indigo-500',
+    submenu: [
+      { href: '/exams/pte', label: 'PTE练习' },
+      { href: '/exams/ielts', label: 'IELTS练习' },
+      { href: '/exams/mock-test', label: '模拟考试' },
+      { href: '/exams/sessions', label: '考试记录' },
+    ]
+  },
+  {
+    href: '/library',
+    icon: Library,
+    label: '题库',
+    color: 'text-violet-500',
+    submenu: [
+      { href: '/library', label: '题库广场' },
+      { href: '/library/my', label: '我的题库' },
+      { href: '/library/create', label: '创建题库' },
+    ]
+  },
+  {
+    href: '/games',
+    icon: Gamepad2,
+    label: '游戏',
+    color: 'text-pink-500',
+    submenu: [
+      { href: '/games', label: '游戏大厅' },
+      { href: '/games/word-match', label: '单词配对' },
+      { href: '/games/memory-flip', label: '记忆翻牌' },
+    ]
+  },
+  {
+    href: '/social',
+    icon: Users,
+    label: '社区',
+    color: 'text-rose-500',
+    submenu: [
+      { href: '/social', label: '学习动态' },
+      { href: '/social/groups', label: '学习群组' },
+    ]
+  },
+  { href: '/shop', icon: ShoppingBag, label: '商店', color: 'text-amber-500' },
   { href: '/analytics', icon: BarChart3, label: '统计', color: 'text-teal-500' },
+  { href: '/notifications', icon: Bell, label: '通知', color: 'text-purple-500' },
 ];
 
 const AppNavigation: React.FC<NavigationProps> = ({ 
@@ -51,6 +130,7 @@ const AppNavigation: React.FC<NavigationProps> = ({
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
   const handleLogout = () => {
     dispatch(clearCredentials());
@@ -112,34 +192,76 @@ const AppNavigation: React.FC<NavigationProps> = ({
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center space-x-0.5">
             {navigationItems.map((item) => {
-              const isActive = pathname === item.href;
+              const isActive = pathname === item.href || (item.submenu && item.submenu.some(sub => pathname === sub.href));
               const Icon = item.icon;
 
               return (
-                <Link key={item.href} href={item.href}>
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className={`relative px-3 py-2.5 rounded-lg transition-all duration-200 flex items-center space-x-2 ${
-                      isActive 
-                        ? 'bg-gradient-to-r from-emerald-50 to-cyan-50 text-emerald-700 shadow-sm' 
-                        : 'text-gray-600 hover:bg-gray-50'
-                    }`}
-                  >
-                    <Icon className={`h-4 w-4 ${isActive ? 'text-emerald-600' : item.color}`} />
-                    <span className="font-medium text-sm">{item.label}</span>
-                    
-                    {isActive && (
+                <div 
+                  key={item.href} 
+                  className="relative"
+                  onMouseEnter={() => setHoveredItem(item.submenu ? item.href : null)}
+                  onMouseLeave={() => setHoveredItem(null)}
+                >
+                  <Link href={item.href}>
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className={`relative px-3 py-2.5 rounded-lg transition-all duration-200 flex items-center space-x-2 ${
+                        isActive 
+                          ? 'bg-gradient-to-r from-emerald-50 to-cyan-50 text-emerald-700 shadow-sm' 
+                          : 'text-gray-600 hover:bg-gray-50'
+                      }`}
+                    >
+                      <Icon className={`h-4 w-4 ${isActive ? 'text-emerald-600' : item.color}`} />
+                      <span className="font-medium text-sm">{item.label}</span>
+                      
+                      {isActive && (
+                        <motion.div
+                          layoutId="activeTab"
+                          className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-6 h-0.5 bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                        />
+                      )}
+                    </motion.div>
+                  </Link>
+
+                  {/* Submenu Dropdown */}
+                  <AnimatePresence>
+                    {item.submenu && hoveredItem === item.href && (
                       <motion.div
-                        layoutId="activeTab"
-                        className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-6 h-0.5 bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      />
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute top-full left-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50"
+                      >
+                        {item.submenu.map((subItem, index) => (
+                          <Link key={subItem.href} href={subItem.href}>
+                            <motion.div
+                              initial={{ opacity: 0, x: -10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: index * 0.05 }}
+                              className={`flex items-center px-4 py-2 text-sm transition-colors ${
+                                pathname === subItem.href
+                                  ? 'text-emerald-700 bg-emerald-50'
+                                  : 'text-gray-700 hover:bg-gray-50'
+                              }`}
+                            >
+                              {pathname === subItem.href && (
+                                <div className="w-2 h-2 bg-emerald-500 rounded-full mr-3" />
+                              )}
+                              <span className={pathname === subItem.href ? '' : 'ml-5'}>
+                                {subItem.label}
+                              </span>
+                            </motion.div>
+                          </Link>
+                        ))}
+                      </motion.div>
                     )}
-                  </motion.div>
-                </Link>
+                  </AnimatePresence>
+                </div>
               );
             })}
           </div>
@@ -148,28 +270,19 @@ const AppNavigation: React.FC<NavigationProps> = ({
           <div className="flex items-center space-x-4">
             {isAuthenticated && user && showUserMenu && (
               <>
-                {/* User Level & XP */}
-                <div className="hidden md:flex items-center space-x-2">
+                {/* Points Display */}
+                <Link href="/shop" className="hidden md:flex">
                   <motion.div 
-                    className="flex items-center space-x-2 bg-gradient-to-r from-emerald-100 to-cyan-100 px-2.5 py-1.5 rounded-lg"
+                    className="flex items-center space-x-2 bg-gradient-to-r from-yellow-100 to-orange-100 px-3 py-1.5 rounded-lg hover:from-yellow-200 hover:to-orange-200 transition-all duration-200"
                     whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                   >
-                    <Trophy className="h-3.5 w-3.5 text-emerald-600" />
-                    <span className="text-xs font-medium text-emerald-700">
-                      Lv.{user.level}
+                    <Star className="h-4 w-4 text-yellow-600" />
+                    <span className="text-sm font-medium text-yellow-700">
+                      {user.xp}
                     </span>
                   </motion.div>
-                  
-                  <motion.div 
-                    className="flex items-center space-x-2 bg-gradient-to-r from-cyan-100 to-blue-100 px-2.5 py-1.5 rounded-lg"
-                    whileHover={{ scale: 1.05 }}
-                  >
-                    <Zap className="h-3.5 w-3.5 text-cyan-600" />
-                    <span className="text-xs font-medium text-cyan-700">
-                      {user.xp} XP
-                    </span>
-                  </motion.div>
-                </div>
+                </Link>
 
                 {/* User Menu */}
                 <div className="relative">
@@ -200,7 +313,6 @@ const AppNavigation: React.FC<NavigationProps> = ({
                       >
                         <div className="px-4 py-3 border-b border-gray-100">
                           <p className="text-sm font-medium text-gray-900">{user.username}</p>
-                          <p className="text-xs text-gray-500">{user.email}</p>
                         </div>
                         
                         <Link href="/profile" onClick={() => setIsUserMenuOpen(false)}>

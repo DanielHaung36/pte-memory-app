@@ -256,7 +256,7 @@ const DailyGoal: React.FC<DailyGoalProps> = ({
             <p className="text-gray-600">
               {isGoalCompleted 
                 ? '恭喜你完成了今天的学习任务' 
-                : `还有${goalData.targetQuestions - goalData.completedQuestions}题等待复习`
+                : `还有${todayTarget - todayCompleted}题等待复习`
               }
             </p>
           </div>
@@ -272,10 +272,10 @@ const DailyGoal: React.FC<DailyGoalProps> = ({
             <RefreshCw className="h-4 w-4" />
           </motion.button>
           
-          {goalData.streakDays > 0 && (
+          {(statistics?.weekly_reviewed || 0) > 0 && (
             <div className="flex items-center space-x-1 bg-orange-100 text-orange-600 px-3 py-1 rounded-full">
               <Flame className="h-4 w-4" />
-              <span className="text-sm font-medium">{goalData.streakDays}天</span>
+              <span className="text-sm font-medium">{Math.floor((statistics?.weekly_reviewed || 0) / 7)}天</span>
             </div>
           )}
         </div>

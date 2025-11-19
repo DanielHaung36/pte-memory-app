@@ -293,7 +293,7 @@ export default function ReviewCalendar({ className = '', onDateSelect, showStats
               {/* Custom Calendar */}
               <div className="healing-calendar">
                 <Calendar
-                  onChange={handleDateClick}
+                  onChange={(value: any) => handleDateClick(value as Date)}
                   value={selectedDate}
                   onActiveStartDateChange={({ activeStartDate }) => {
                     if (activeStartDate) setCurrentMonth(activeStartDate)

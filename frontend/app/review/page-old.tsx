@@ -17,7 +17,7 @@ import {
   Calendar, Award, BarChart3, TimerIcon, PlayCircle
 } from 'lucide-react'
 import { redirect, useRouter } from 'next/navigation'
-import { useGetDueQuestionsQuery, useGetQuestionStatsQuery } from '@/lib/store/questionsApi'
+import { useGetDueQuestionsQuery, useGetQuestionStatisticsQuery } from '@/lib/store/questionsApi'
 
 export default function ReviewPage() {
   const router = useRouter()
@@ -34,12 +34,12 @@ export default function ReviewPage() {
     isLoading: questionsLoading, 
     error: questionsError,
     refetch: refetchQuestions
-  } = useGetDueQuestionsQuery(undefined)
+  } = useGetDueQuestionsQuery({})
   
   const { 
     data: statsData, 
     isLoading: statsLoading 
-  } = useGetQuestionStatsQuery(undefined)
+  } = useGetQuestionStatisticsQuery()
   
   useEffect(() => {
     if (!isAuthenticated) {
@@ -87,10 +87,10 @@ export default function ReviewPage() {
   // 根据筛选条件过滤题目
   const filteredQuestions = actualDueQuestions.filter(question => {
     if (filterType === 'all') return true
-    if (filterType === 'urgent') return question.priority >= 4
+    if (filterType === 'urgent') return (question as any).priority >= 4 || false
     if (filterType === 'overdue') {
       const now = new Date()
-      const dueDate = new Date(question.nextReviewDate)
+      const dueDate = new Date((question as any).nextReviewDate || (question as any).created_at || new Date())
       return dueDate < now
     }
     return true

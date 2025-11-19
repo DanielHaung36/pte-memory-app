@@ -271,14 +271,6 @@ export default function ModernDashboardPage() {
 
               {/* User Profile */}
               <div className="flex items-center space-x-3">
-                <div className="text-right hidden sm:block">
-                  <div className="text-sm font-semibold text-gray-900">
-                    {user?.username || "User"}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    Level {stats.levelProgress.level}
-                  </div>
-                </div>
                 <div className="relative">
                   <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
                     {(user?.username || "U")[0].toUpperCase()}
@@ -300,35 +292,13 @@ export default function ModernDashboardPage() {
             transition={{ duration: 0.6 }}
             className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/20"
           >
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between">
-              <div className="mb-4 lg:mb-0">
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                  欢迎回来，{user?.username || "User"}！ 👋
-                </h2>
-                <p className="text-gray-600 text-lg">
-                  今天是学习的好日子，让我们继续进步吧！
-                </p>
-              </div>
-
-              {/* Level Progress */}
-              <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-4 rounded-xl text-white min-w-[200px]">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">
-                    Level {stats.levelProgress.level}
-                  </span>
-                  <Trophy className="h-5 w-5" />
-                </div>
-                <div className="w-full bg-white/20 rounded-full h-2 mb-2">
-                  <div
-                    className="bg-white h-2 rounded-full transition-all duration-500"
-                    style={{ width: `${getLevelProgress()}%` }}
-                  />
-                </div>
-                <div className="text-xs text-center">
-                  {stats.levelProgress.xp} / {stats.levelProgress.nextLevelXp}{" "}
-                  XP
-                </div>
-              </div>
+            <div className="text-center">
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                欢迎回来，{user?.username || "User"}！ 👋
+              </h2>
+              <p className="text-gray-600 text-lg">
+                今天是学习的好日子，让我们继续进步吧！
+              </p>
             </div>
           </motion.div>
         </div>

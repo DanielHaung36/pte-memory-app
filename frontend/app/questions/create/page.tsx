@@ -316,7 +316,7 @@ export default function CreateQuestionPage() {
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                             onClick={() =>
-                              setFormData((prev) => ({ ...prev, type: key }))
+                              setFormData((prev) => ({ ...prev, type: key as typeof prev.type }))
                             }
                             className={`p-4 rounded-2xl border-2 transition-all ${
                               formData.type === key
@@ -567,7 +567,7 @@ export default function CreateQuestionPage() {
                               onClick={() =>
                                 setFormData((prev) => ({
                                   ...prev,
-                                  difficulty: item.level,
+                                  difficulty: item.level as typeof prev.difficulty,
                                 }))
                               }
                               className={`p-4 rounded-xl border-2 transition-all ${

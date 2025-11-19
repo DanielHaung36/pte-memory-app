@@ -7,8 +7,16 @@ import ProtectedRoute from "@/components/ui/auth/ProtectedRoute";
 import { AnimatePresence } from "framer-motion";
 import { Toaster } from "react-hot-toast";
 import { ThemeProvider } from "next-themes";
+import { usePathname } from "next/navigation";
+import { SmartAlertContainer } from "@/components/ui/SmartAlert";
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  
+  // 这些页面不需要认证保护
+  const publicRoutes = ['/auth/login', '/auth/register', '/'];
+  const isPublicRoute = publicRoutes.includes(pathname);
+  
   return (
     <ReduxProvider>
       <ReviewProvider>
@@ -19,10 +27,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
             enableSystem
             disableTransitionOnChange
           >
-            <ProtectedRoute>
+            <ProtectedRoute requireAuth={!isPublicRoute}>
               <AnimatePresence mode="wait" initial={false}>
                 {children}
               </AnimatePresence>
+              <SmartAlertContainer />
             </ProtectedRoute>
             <Toaster
               position="top-center"

@@ -17,8 +17,10 @@ export function useAuth() {
         email: credentials.email,
         level: 1,
         xp: 0,
-        streak_count: 0,
+        streak: 0,
+        best_streak: 0,
         created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       };
       
       const mockToken = 'mock-jwt-token';
@@ -45,8 +47,10 @@ export function useAuth() {
         email: data.email,
         level: 1,
         xp: 0,
-        streak_count: 0,
+        streak: 0,
+        best_streak: 0,
         created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       };
       
       const mockToken = 'mock-jwt-token';

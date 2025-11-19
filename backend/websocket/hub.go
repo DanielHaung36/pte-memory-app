@@ -38,12 +38,13 @@ type Client struct {
 
 // Hub 管理WebSocket连接
 type Hub struct {
-	Clients    map[*Client]bool
+	Clients     map[*Client]bool
 	UserClients map[string][]*Client // 按用户ID分组的客户端
-	Broadcast  chan Message
-	Register   chan *Client
-	Unregister chan *Client
-	mutex      sync.RWMutex
+	RoomClients map[string][]*Client // 按房间ID分组的客户端
+	Broadcast   chan Message
+	Register    chan *Client
+	Unregister  chan *Client
+	mutex       sync.RWMutex
 }
 
 // NewHub 创建新的Hub
@@ -51,6 +52,7 @@ func NewHub() *Hub {
 	return &Hub{
 		Clients:     make(map[*Client]bool),
 		UserClients: make(map[string][]*Client),
+		RoomClients: make(map[string][]*Client),
 		Broadcast:   make(chan Message, 256),
 		Register:    make(chan *Client),
 		Unregister:  make(chan *Client),
@@ -172,10 +174,87 @@ func (h *Hub) SendToAll(messageType string, data interface{}) {
 		Data: data,
 		Time: time.Now(),
 	}
-	
+
 	go func() {
 		h.Broadcast <- message
 	}()
+}
+
+// JoinRoom 加入房间
+func (h *Hub) JoinRoom(userID, roomID string) {
+	h.mutex.Lock()
+	defer h.mutex.Unlock()
+
+	// 获取用户的所有客户端连接
+	clients := h.UserClients[userID]
+	for _, client := range clients {
+		// 添加到房间客户端列表
+		h.RoomClients[roomID] = append(h.RoomClients[roomID], client)
+	}
+}
+
+// LeaveRoom 离开房间
+func (h *Hub) LeaveRoom(userID, roomID string) {
+	h.mutex.Lock()
+	defer h.mutex.Unlock()
+
+	// 获取房间的客户端列表
+	roomClients := h.RoomClients[roomID]
+	userClients := h.UserClients[userID]
+
+	// 从房间客户端列表中移除该用户的所有连接
+	var newRoomClients []*Client
+	for _, roomClient := range roomClients {
+		isUserClient := false
+		for _, userClient := range userClients {
+			if roomClient == userClient {
+				isUserClient = true
+				break
+			}
+		}
+		if !isUserClient {
+			newRoomClients = append(newRoomClients, roomClient)
+		}
+	}
+
+	h.RoomClients[roomID] = newRoomClients
+
+	// 如果房间没有客户端了，删除房间
+	if len(h.RoomClients[roomID]) == 0 {
+		delete(h.RoomClients, roomID)
+	}
+}
+
+// BroadcastToRoom 向房间广播消息
+func (h *Hub) BroadcastToRoom(roomID, messageType string, data interface{}) {
+	h.mutex.RLock()
+	defer h.mutex.RUnlock()
+
+	message := Message{
+		Type: messageType,
+		Data: data,
+		Time: time.Now(),
+	}
+
+	// 获取房间内的所有客户端
+	clients := h.RoomClients[roomID]
+
+	for _, client := range clients {
+		select {
+		case client.Send <- message:
+		default:
+			// 客户端缓冲区满，跳过
+			log.Printf("Failed to send message to client %s in room %s", client.ID, roomID)
+		}
+	}
+}
+
+// GetRoomMemberCount 获取房间成员数
+func (h *Hub) GetRoomMemberCount(roomID string) int {
+	h.mutex.RLock()
+	defer h.mutex.RUnlock()
+
+	return len(h.RoomClients[roomID])
 }
 
 // GetUserConnections 获取用户连接数

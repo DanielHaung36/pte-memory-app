@@ -3,6 +3,7 @@ package controllers
 import (
 	"net/http"
 	"strings"
+	"time"
 	
 	"github.com/gin-gonic/gin"
 	"pte-memory-backend/database"
@@ -98,11 +99,22 @@ func (ac *AuthController) Register(c *gin.Context) {
 		return
 	}
 
-	// Return success response
+	// Set HTTP-only cookie
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie(
+		"auth_token",           // name
+		token,                  // value
+		int((7*24*time.Hour).Seconds()), // maxAge (7 days)
+		"/",                    // path
+		"",                     // domain
+		false,                  // secure (set to true in production with HTTPS)
+		true,                   // httpOnly
+	)
+
+	// Return success response (without token)
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "User created successfully",
 		"user":    user,
-		"token":   token,
 	})
 }
 
@@ -146,11 +158,22 @@ func (ac *AuthController) Login(c *gin.Context) {
 		return
 	}
 
-	// Return success response
+	// Set HTTP-only cookie
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie(
+		"auth_token",           // name
+		token,                  // value
+		int((7*24*time.Hour).Seconds()), // maxAge (7 days)
+		"/",                    // path
+		"",                     // domain
+		false,                  // secure (set to true in production with HTTPS)
+		true,                   // httpOnly
+	)
+
+	// Return success response (without token)
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Login successful",
 		"user":    user,
-		"token":   token,
 	})
 }
 
@@ -220,8 +243,20 @@ func (ac *AuthController) UpdateProfile(c *gin.Context) {
 	})
 }
 
-// Logout (for client-side token cleanup - server doesn't store tokens)
+// Logout clears the authentication cookie
 func (ac *AuthController) Logout(c *gin.Context) {
+	// Clear the authentication cookie
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie(
+		"auth_token",           // name
+		"",                     // value (empty)
+		-1,                     // maxAge (-1 means delete immediately)
+		"/",                    // path
+		"",                     // domain
+		false,                  // secure
+		true,                   // httpOnly
+	)
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Logged out successfully",
 	})

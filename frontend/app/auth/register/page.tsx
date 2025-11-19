@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { setCredentials } from '@/lib/store/authSlice'
+import { useRegisterMutation } from '@/lib/store/authApi'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
@@ -21,11 +22,11 @@ export default function RegisterPage() {
   })
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
   const [registrationStep, setRegistrationStep] = useState<'form' | 'success' | 'redirecting'>('form')
   
   const dispatch = useDispatch()
   const router = useRouter()
+  const [register, { isLoading }] = useRegisterMutation()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -52,23 +53,12 @@ export default function RegisterPage() {
       return
     }
     
-    setIsLoading(true)
-
     try {
-      // 模拟注册API调用
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      const mockUser = {
-        id: Date.now().toString(),
+      const result = await register({
         username: formData.username,
         email: formData.email,
-        level: 1,
-        xp: 0,
-        streak_count: 0,
-        created_at: new Date().toISOString(),
-      }
-      
-      const mockToken = 'mock-jwt-token-' + Date.now()
+        password: formData.password
+      }).unwrap()
       
       // 显示成功页面
       setRegistrationStep('success')
@@ -86,9 +76,9 @@ export default function RegisterPage() {
       
       // 2秒后设置Redux状态并跳转
       setTimeout(() => {
+        // No longer storing token in localStorage - using HTTP-only cookies
         dispatch(setCredentials({
-          user: mockUser,
-          token: mockToken,
+          user: result.user,
         }))
         
         setRegistrationStep('redirecting')
@@ -99,16 +89,15 @@ export default function RegisterPage() {
         }, 1000)
       }, 2000)
       
-    } catch (error) {
-      toast.error('注册失败，请重试', {
+    } catch (error: any) {
+      const errorMessage = error?.data?.message || error?.data?.error || '注册失败，请重试'
+      toast.error(errorMessage, {
         style: {
           background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%)',
           color: 'white',
           borderRadius: '16px'
         }
       })
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -312,6 +301,7 @@ export default function RegisterPage() {
                   required
                   value={formData.username}
                   onChange={handleChange}
+                  autoComplete="username"
                   className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all bg-gray-50/50 backdrop-blur-sm placeholder-gray-400"
                   placeholder="输入您的用户名"
                 />
@@ -337,6 +327,7 @@ export default function RegisterPage() {
                   required
                   value={formData.email}
                   onChange={handleChange}
+                  autoComplete="email"
                   className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all bg-gray-50/50 backdrop-blur-sm placeholder-gray-400"
                   placeholder="输入您的邮箱"
                 />
@@ -362,6 +353,7 @@ export default function RegisterPage() {
                   required
                   value={formData.password}
                   onChange={handleChange}
+                  autoComplete="new-password"
                   className="w-full pl-10 pr-12 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all bg-gray-50/50 backdrop-blur-sm placeholder-gray-400"
                   placeholder="设置您的密码"
                 />
@@ -394,6 +386,7 @@ export default function RegisterPage() {
                   required
                   value={formData.confirmPassword}
                   onChange={handleChange}
+                  autoComplete="new-password"
                   className="w-full pl-10 pr-12 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all bg-gray-50/50 backdrop-blur-sm placeholder-gray-400"
                   placeholder="再次输入密码"
                 />
@@ -470,12 +463,12 @@ export default function RegisterPage() {
                 className="font-semibold text-purple-600 hover:text-purple-700 transition-colors inline-flex items-center gap-1"
               >
                 立即登录
-                <motion.div
+                <motion.span
                   animate={{ x: [0, 3, 0] }}
                   transition={{ duration: 1.5, repeat: Infinity }}
                 >
                   💫
-                </motion.div>
+                </motion.span>
               </Link>
             </p>
           </motion.div>

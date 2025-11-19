@@ -41,9 +41,13 @@ export default function ReviewSessionPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const mode = searchParams.get('mode') || 'smart';
+  const specificQuestionId = searchParams.get('question'); // 获取特定题目ID
+  
+  console.log('复习页面加载，参数:', { mode, specificQuestionId });
   
   const { data: questionsData, isLoading, refetch } = useGetDueQuestionsQuery({ 
-    limit: mode === 'challenge' ? 10 : 20 
+    limit: mode === 'challenge' ? 10 : 20,
+    specific_question_id: specificQuestionId // 如果指定了题目ID，传给后端
   });
   const [reviewQuestion] = useReviewQuestionMutation();
   const { isConnected } = useWebSocket();
@@ -74,8 +78,8 @@ export default function ReviewSessionPage() {
       case 'smart':
         return questions.sort((a, b) => {
           // 优先级：到期时间越久的越优先
-          const aOverdue = new Date(a.next_review_date).getTime() - Date.now();
-          const bOverdue = new Date(b.next_review_date).getTime() - Date.now();
+          const aOverdue = new Date((a as any).next_review_date || new Date()).getTime() - Date.now();
+          const bOverdue = new Date((b as any).next_review_date || new Date()).getTime() - Date.now();
           return aOverdue - bOverdue;
         });
       default:
@@ -106,11 +110,10 @@ export default function ReviewSessionPage() {
       const responseTime = Date.now() - questionStartTime;
       
       await reviewQuestion({
-        questionId: currentQuestion.id,
-        isCorrect,
-        confidenceLevel,
-        userAnswer: userAnswer || "未回答",
-        responseTime
+        question_id: currentQuestion.id,
+        is_correct: isCorrect,
+        confidence_level: confidenceLevel,
+        response_time: responseTime
       }).unwrap();
 
       setSessionStats(prev => ({
@@ -215,10 +218,10 @@ export default function ReviewSessionPage() {
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                    {REVIEW_MODES[mode as keyof typeof REVIEW_MODES]?.name || '复习模式'}
+                    {specificQuestionId ? '单题复习' : (REVIEW_MODES[mode as keyof typeof REVIEW_MODES]?.name || '复习模式')}
                   </h1>
                   <p className="text-gray-600">
-                    {REVIEW_MODES[mode as keyof typeof REVIEW_MODES]?.description || '智能复习'}
+                    {specificQuestionId ? '专注复习这道题目' : (REVIEW_MODES[mode as keyof typeof REVIEW_MODES]?.description || '智能复习')}
                   </p>
                 </div>
               </div>

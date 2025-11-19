@@ -8,7 +8,12 @@
       "Bash(find:*)",
       "Bash(go build:*)",
       "Bash(npm run dev:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(curl:*)",
+      "Bash(docker run:*)",
+      "Bash(PORT=3001 npm run dev)",
+      "Bash(go get:*)",
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": []

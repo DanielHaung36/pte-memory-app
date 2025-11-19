@@ -158,7 +158,6 @@ export default function AudioPlayer({ audioUrl, text, autoPlay = false, classNam
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
           onEnded={() => setIsPlaying(false)}
-          volume={volume}
           muted={isMuted}
         />
       )}

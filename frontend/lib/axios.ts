@@ -1,17 +1,16 @@
 import axios from 'axios'
+import { API_CONFIG } from './config'
 
 const axiosInstance = axios.create({
-  baseURL: process.env.NODE_ENV === 'development' ? 'http://localhost:8080/api' : '/api',
+  baseURL: API_CONFIG.API_BASE_URL,
   timeout: 10000,
+  withCredentials: true, // Include cookies in requests
 })
 
-// Request interceptor to add auth token
+// Request interceptor (no longer needed for token management)
 axiosInstance.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
+    // Token is now handled automatically via HTTP-only cookies
     return config
   },
   (error) => {
@@ -26,8 +25,8 @@ axiosInstance.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
+      // No need to remove localStorage items since we're using HTTP-only cookies
+      // Cookie will be cleared by server logout endpoint
       window.location.href = '/auth/login'
     }
     return Promise.reject(error)

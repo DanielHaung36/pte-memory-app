@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
 import type { RootState } from './index'
+import { API_CONFIG } from '../config'
 
 interface User {
   id: string
@@ -7,8 +8,10 @@ interface User {
   email: string
   level: number
   xp: number
-  streak_count: number
+  streak: number
+  best_streak: number
   created_at: string
+  updated_at: string
   avatar?: string
 }
 
@@ -26,18 +29,15 @@ interface RegisterRequest {
 interface AuthResponse {
   message: string
   user: User
-  token: string
 }
 
 export const authApi = createApi({
   reducerPath: 'authApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NODE_ENV === 'development' ? 'http://localhost:8080/api/auth' : '/api/auth',
-    prepareHeaders: (headers, { getState }) => {
-      const token = (getState() as RootState).auth.token
-      if (token) {
-        headers.set('authorization', `Bearer ${token}`)
-      }
+    baseUrl: API_CONFIG.AUTH_API_URL,
+    credentials: 'include', // Include cookies in requests
+    prepareHeaders: (headers) => {
+      // Remove token management - now handled by HTTP-only cookies
       return headers
     },
   }),

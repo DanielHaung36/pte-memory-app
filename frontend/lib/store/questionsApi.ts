@@ -1,7 +1,8 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
 import type { RootState } from './index'
+import { API_CONFIG } from '../config'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
+const API_BASE_URL = API_CONFIG.BACKEND_URL
 
 // 错题类型定义
 export interface Question {
@@ -61,6 +62,20 @@ export interface QuestionStats {
   updated_at: string
 }
 
+export interface GeneralQuestionStats {
+  total_questions: number
+  due_questions: number
+  overdue_questions: number
+  mastered_questions: number
+  today_reviewed: number
+  weekly_reviewed: number
+  monthly_reviewed: number
+  average_accuracy: number
+  type_breakdown: Record<string, number>
+  difficulty_breakdown: Record<string, number>
+  tag_stats: Record<string, number>
+}
+
 export interface CreateQuestionRequest {
   title: string
   content: string
@@ -93,11 +108,9 @@ export const questionsApi = createApi({
   reducerPath: 'questionsApi',
   baseQuery: fetchBaseQuery({
     baseUrl: API_BASE_URL,
-    prepareHeaders: (headers, { getState }) => {
-      const token = (getState() as RootState).auth.token || localStorage.getItem('token')
-      if (token) {
-        headers.set('authorization', `Bearer ${token}`)
-      }
+    credentials: 'include', // Include cookies in requests
+    prepareHeaders: (headers) => {
+      // Remove token management - now handled by HTTP-only cookies
       return headers
     },
   }),
@@ -151,10 +164,13 @@ export const questionsApi = createApi({
     }),
 
     // 获取待复习错题
-    getDueQuestions: builder.query<{ questions: Question[]; count: number }, { limit?: number }>({
-      query: ({ limit = 20 }) => ({
+    getDueQuestions: builder.query<{ questions: Question[]; count: number }, { limit?: number; specific_question_id?: string }>({
+      query: ({ limit = 20, specific_question_id }) => ({
         url: '/api/questions/due',
-        params: { limit },
+        params: { 
+          limit,
+          ...(specific_question_id && { question_id: specific_question_id })
+        },
       }),
       providesTags: ['Question', 'ReviewSchedule'],
     }),
@@ -189,6 +205,7 @@ export const questionsApi = createApi({
       query: (questionId) => `/api/questions/${questionId}/stats`,
       providesTags: (result, error, questionId) => [{ type: 'QuestionStats', id: questionId }],
     }),
+
 
     // 批量操作错题
     batchUpdateQuestions: builder.mutation<
